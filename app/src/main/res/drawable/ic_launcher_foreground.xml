@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Chat bubble outline -->
+    <path
+        android:fillColor="#25D366"
+        android:pathData="M54,28 C39.64,28 28,39.64 28,54 C28,59.34 29.62,64.3 32.4,68.44 L29,80 L41.04,76.84 C44.92,78.86 49.34,80 54,80 C68.36,80 80,68.36 80,54 C80,39.64 68.36,28 54,28 Z" />
+    <!-- Pulse heartbeat inside -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M38,54 L44,54 L48,46 L53,62 L57,50 L61,56 L64,54 L70,54" />
+</vector>
