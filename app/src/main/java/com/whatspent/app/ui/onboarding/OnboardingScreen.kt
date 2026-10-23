@@ -1,4 +1,4 @@
-﻿package com.whatspent.app.ui.onboarding
+package com.whatspent.app.ui.onboarding
 
 import android.Manifest
 import android.os.Build
@@ -87,8 +87,13 @@ fun OnboardingScreen(
 
     val notificationLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
-    ) {
+    ) { isGranted ->
         permissionStatus = PermissionHelper.getPermissionStatus(context)
+        if (!isGranted && !PermissionHelper.isNotificationPermissionGranted(context)) {
+            runCatching {
+                context.startActivity(PermissionHelper.createNotificationSettingsIntent(context))
+            }
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -266,9 +271,17 @@ fun OnboardingScreen(
                     buttonLabel = "Grant Permission",
                     onAction = {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            runCatching {
+                                notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }.onFailure {
+                                runCatching {
+                                    context.startActivity(PermissionHelper.createNotificationSettingsIntent(context))
+                                }
+                            }
                         } else {
-                            context.startActivity(PermissionHelper.createNotificationSettingsIntent(context))
+                            runCatching {
+                                context.startActivity(PermissionHelper.createNotificationSettingsIntent(context))
+                            }
                         }
                     }
                 )

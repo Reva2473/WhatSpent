@@ -1,4 +1,4 @@
-﻿package com.whatspent.app.ui.settings
+package com.whatspent.app.ui.settings
 
 import android.Manifest
 import android.os.Build
@@ -112,8 +112,13 @@ fun SettingsScreen(
     // Runtime permission launcher for notifications
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
-    ) {
+    ) { isGranted ->
         permissionState = PermissionHelper.getPermissionStatus(context)
+        if (!isGranted && !PermissionHelper.isNotificationPermissionGranted(context)) {
+            runCatching {
+                context.startActivity(PermissionHelper.createNotificationSettingsIntent(context))
+            }
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -170,9 +175,17 @@ fun SettingsScreen(
                     icon = Icons.Default.Notifications,
                     onGrantClick = {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            runCatching {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }.onFailure {
+                                runCatching {
+                                    context.startActivity(PermissionHelper.createNotificationSettingsIntent(context))
+                                }
+                            }
                         } else {
-                            context.startActivity(PermissionHelper.createNotificationSettingsIntent(context))
+                            runCatching {
+                                context.startActivity(PermissionHelper.createNotificationSettingsIntent(context))
+                            }
                         }
                     }
                 )
