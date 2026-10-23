@@ -1,7 +1,7 @@
-<resources>
-    <string name="app_name">ChatPulse</string>
-    <string name="accessibility_service_label">ChatPulse WhatsApp Tracker</string>
-    <string name="accessibility_service_description">ChatPulse detects when WhatsApp conversations are active to accurately calculate chat screen time and provide a live overlay timer.</string>
+﻿<resources>
+    <string name="app_name">WhatSpent</string>
+    <string name="accessibility_service_label">WhatSpent WhatsApp Tracker</string>
+    <string name="accessibility_service_description">WhatSpent detects when WhatsApp conversations are active to accurately calculate chat screen time and provide a live overlay timer.</string>
 
     <!-- Notification channel -->
     <string name="notification_channel_tracking_name">Active WhatsApp Tracking</string>
@@ -18,7 +18,7 @@
     <string name="permission_notification_desc">Shows active session tracking status in the system notification shade.</string>
 
     <!-- Biometric -->
-    <string name="biometric_prompt_title">Unlock ChatPulse</string>
+    <string name="biometric_prompt_title">Unlock WhatSpent</string>
     <string name="biometric_prompt_subtitle">Verify your identity to view WhatsApp screen time analytics</string>
     <string name="biometric_not_available">Biometric authentication is not available or configured on this device.</string>
     <string name="biometric_failed">Authentication failed. Please try again.</string>

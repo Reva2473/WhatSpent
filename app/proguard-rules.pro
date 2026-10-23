@@ -1,4 +1,4 @@
-# Proguard rules for ChatPulse
+﻿# Proguard rules for WhatSpent
 
 # Room Database
 -keepclassmembers class * extends androidx.room.RoomDatabase {

@@ -1,4 +1,4 @@
-plugins {
+﻿plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.chatpulse.app"
+    namespace = "com.whatspent.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.chatpulse.app"
+        applicationId = "com.whatspent.app"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
