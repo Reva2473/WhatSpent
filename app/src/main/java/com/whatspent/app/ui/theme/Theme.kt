@@ -1,4 +1,4 @@
-﻿package com.whatspent.app.ui.theme
+package com.whatspent.app.ui.theme
 
 import android.app.Activity
 import android.os.Build
@@ -10,37 +10,38 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = EmeraldPrimaryDark,
-    onPrimary = OnEmeraldPrimaryDark,
-    primaryContainer = EmeraldPrimaryContainerDark,
-    onPrimaryContainer = OnEmeraldPrimaryContainerDark,
-    secondary = IndigoSecondaryDark,
-    onSecondary = OnIndigoSecondaryDark,
-    secondaryContainer = IndigoSecondaryContainerDark,
-    onSecondaryContainer = OnIndigoSecondaryContainerDark,
-    tertiary = CyanTertiaryDark,
-    onTertiary = OnCyanTertiaryDark,
-    tertiaryContainer = CyanTertiaryContainerDark,
-    onTertiaryContainer = OnCyanTertiaryContainerDark,
-    background = BackgroundDark,
-    onBackground = OnBackgroundDark,
-    surface = SurfaceDark,
-    onSurface = OnSurfaceDark,
-    surfaceVariant = SurfaceVariantDark,
-    onSurfaceVariant = OnSurfaceVariantDark,
-    surfaceContainerLowest = SurfaceContainerLowestDark,
-    surfaceContainerLow = SurfaceContainerLowDark,
-    surfaceContainer = SurfaceContainerDark,
-    surfaceContainerHigh = SurfaceContainerHighDark,
-    surfaceContainerHighest = SurfaceContainerHighestDark,
-    outline = OutlineDark,
-    outlineVariant = OutlineVariantDark,
+    primary = ButterGoldAccent,
+    onPrimary = OnButterGoldInk,
+    primaryContainer = CharcoalBentoSurface,
+    onPrimaryContainer = ButterGoldAccent,
+    secondary = SageMintHeroCard,
+    onSecondary = PastelCardInk,
+    secondaryContainer = SageMintHeroCard,
+    onSecondaryContainer = PastelCardInk,
+    tertiary = MintPositiveBadge,
+    onTertiary = OnMintPositiveInk,
+    tertiaryContainer = ElevatedCharcoalSurface,
+    onTertiaryContainer = MintPositiveBadge,
+    background = ObsidianBackground,
+    onBackground = Color(0xFFF5F5F5),
+    surface = CharcoalBentoSurface,
+    onSurface = Color(0xFFF5F5F5),
+    surfaceVariant = CharcoalBentoSurface,
+    onSurfaceVariant = MutedChampagneIcon,
+    surfaceContainerLowest = ObsidianBackground,
+    surfaceContainerLow = ObsidianBackground,
+    surfaceContainer = CharcoalBentoSurface,
+    surfaceContainerHigh = ElevatedCharcoalSurface,
+    surfaceContainerHighest = ElevatedCharcoalSurface,
+    outline = ElevatedCharcoalSurface,
+    outlineVariant = Color(0xFF38383E),
     error = ErrorDark,
     onError = OnErrorDark,
     errorContainer = ErrorContainerDark,
@@ -52,12 +53,12 @@ private val LightColorScheme = lightColorScheme(
     onPrimary = OnEmeraldPrimaryLight,
     primaryContainer = EmeraldPrimaryContainerLight,
     onPrimaryContainer = OnEmeraldPrimaryContainerLight,
-    secondary = IndigoSecondaryLight,
-    onSecondary = OnIndigoSecondaryLight,
-    secondaryContainer = IndigoSecondaryContainerLight,
-    onSecondaryContainer = OnIndigoSecondaryContainerLight,
-    tertiary = CyanTertiaryLight,
-    onTertiary = OnCyanTertiaryLight,
+    secondary = SageMintHeroCard,
+    onSecondary = PastelCardInk,
+    secondaryContainer = SageMintHeroCard,
+    onSecondaryContainer = PastelCardInk,
+    tertiary = MintPositiveBadge,
+    onTertiary = OnMintPositiveInk,
     tertiaryContainer = CyanTertiaryContainerLight,
     onTertiaryContainer = OnCyanTertiaryContainerLight,
     background = BackgroundLight,
@@ -81,8 +82,8 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun WhatSpentTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    darkTheme: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -99,11 +100,11 @@ fun WhatSpentTheme(
         SideEffect {
             val window = (view.context as? Activity)?.window
             if (window != null) {
-                window.statusBarColor = colorScheme.background.toArgb()
-                window.navigationBarColor = colorScheme.background.toArgb()
+                window.statusBarColor = ObsidianBackground.toArgb()
+                window.navigationBarColor = ObsidianBackground.toArgb()
                 val insetsController = WindowCompat.getInsetsController(window, view)
-                insetsController.isAppearanceLightStatusBars = !darkTheme
-                insetsController.isAppearanceLightNavigationBars = !darkTheme
+                insetsController.isAppearanceLightStatusBars = false
+                insetsController.isAppearanceLightNavigationBars = false
             }
         }
     }

@@ -1,4 +1,4 @@
-﻿package com.whatspent.app.data.preferences
+package com.whatspent.app.data.preferences
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -83,7 +83,7 @@ class AppPreferencesRepository(private val context: Context) {
         }
 
     /**
-     * Flow observing whether Material You dynamic colors are enabled. Default: true.
+     * Flow observing whether Material You dynamic colors are enabled. Default: false.
      */
     val dynamicColorEnabled: Flow<Boolean> = context.dataStore.data
         .catch { exception ->
@@ -95,7 +95,7 @@ class AppPreferencesRepository(private val context: Context) {
         }
         .map { preferences ->
             preferences[PreferencesKeys.DYNAMIC_COLOR]
-                ?: sharedPrefs.getBoolean(KEY_DYNAMIC_COLOR_CACHE, true)
+                ?: sharedPrefs.getBoolean(KEY_DYNAMIC_COLOR_CACHE, false)
         }
 
     // Synchronous accessors for AccessibilityService and background workers
@@ -113,7 +113,7 @@ class AppPreferencesRepository(private val context: Context) {
     }
 
     fun isDynamicColorEnabledSync(): Boolean {
-        return sharedPrefs.getBoolean(KEY_DYNAMIC_COLOR_CACHE, true)
+        return sharedPrefs.getBoolean(KEY_DYNAMIC_COLOR_CACHE, false)
     }
 
     // Suspend mutating functions updating both DataStore and SharedPreferences cache

@@ -47,6 +47,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.whatspent.app.service.WhatsAppTrackerService
 import com.whatspent.app.ui.navigation.WhatSpentNavGraph
+import com.whatspent.app.ui.theme.ButterGoldAccent
+import com.whatspent.app.ui.theme.CharcoalBentoSurface
+import com.whatspent.app.ui.theme.MutedChampagneIcon
+import com.whatspent.app.ui.theme.ObsidianBackground
+import com.whatspent.app.ui.theme.OnButterGoldInk
 import com.whatspent.app.ui.theme.WhatSpentTheme
 import com.whatspent.app.util.BiometricAuthHelper
 
@@ -60,7 +65,7 @@ class MainActivity : FragmentActivity() {
         val app = application as WhatSpentApplication
 
         setContent {
-            val dynamicColorEnabled by app.preferences.dynamicColorEnabled.collectAsState(initial = true)
+            val dynamicColorEnabled by app.preferences.dynamicColorEnabled.collectAsState(initial = false)
             val biometricLockEnabled by app.preferences.biometricLockEnabled.collectAsState(initial = false)
 
             var isUnlocked by remember { mutableStateOf(!app.preferences.isBiometricLockEnabledSync()) }
@@ -157,6 +162,7 @@ class MainActivity : FragmentActivity() {
 
 /**
  * Clean Material 3 Lock Screen displayed when Biometric Lock is enabled.
+ * Styled with Obsidian background, Charcoal bento surface, and Butter-Gold pill button.
  */
 @Composable
 private fun BiometricLockScreen(
@@ -165,6 +171,7 @@ private fun BiometricLockScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(ObsidianBackground)
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -176,14 +183,14 @@ private fun BiometricLockScreen(
                 modifier = Modifier
                     .size(88.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .background(CharcoalBentoSurface),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Lock,
                     contentDescription = null,
-                    modifier = Modifier.size(44.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    modifier = Modifier.size(40.dp),
+                    tint = ButterGoldAccent
                 )
             }
 
@@ -193,7 +200,7 @@ private fun BiometricLockScreen(
                 text = "WhatSpent Locked",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
+                color = androidx.compose.ui.graphics.Color.White
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -201,7 +208,7 @@ private fun BiometricLockScreen(
             Text(
                 text = "Biometric protection is enabled to keep your WhatsApp screen time analytics private.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MutedChampagneIcon,
                 textAlign = TextAlign.Center
             )
 
@@ -209,24 +216,27 @@ private fun BiometricLockScreen(
 
             Button(
                 onClick = onUnlockClick,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(26.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = ButterGoldAccent,
+                    contentColor = OnButterGoldInk
                 ),
                 modifier = Modifier
-                    .fillMaxWidth(0.8f)
+                    .fillMaxWidth(0.82f)
                     .height(52.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Fingerprint,
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
+                    tint = OnButterGoldInk
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Unlock with Biometrics",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = OnButterGoldInk
                 )
             }
         }

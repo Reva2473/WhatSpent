@@ -364,15 +364,15 @@ class FloatingPillOverlayManager(private val context: Context) {
     }
 
     companion object {
-        // Material 3 Dark / Dynamic Translucent Colors
-        private val COLOR_BACKGROUND_SURFACE = Color.parseColor("#E61E222B") // ~90% dark slate
-        private val COLOR_STROKE_NORMAL = Color.parseColor("#408AB4F8")     // subtle blue accent
-        private val COLOR_STROKE_LIMIT = Color.parseColor("#E6EF5350")      // amber/red limit border
-        private val COLOR_DOT_NORMAL = Color.parseColor("#4CAF50")        // pulsating emerald green
-        private val COLOR_DOT_LIMIT = Color.parseColor("#EF5350")         // coral red
-        private val COLOR_TEXT_PRIMARY = Color.parseColor("#F1F5F9")      // high contrast white
-        private val COLOR_TEXT_ACCENT = Color.parseColor("#8AB4F8")       // subtle cyan/blue
-        private val COLOR_TEXT_MUTED = Color.parseColor("#94A3B8")        // medium contrast gray
-        private val COLOR_LIMIT_ACCENT = Color.parseColor("#FF8A80")      // warning text
+        // Obsidian + Butter-Gold + Pastel Bento aesthetic
+        private val COLOR_BACKGROUND_SURFACE = Color.parseColor("#F218181A") // Obsidian/Charcoal container (~95% opacity)
+        private val COLOR_STROKE_NORMAL = Color.parseColor("#55EFE29B")     // subtle Butter-Gold border
+        private val COLOR_STROKE_LIMIT = Color.parseColor("#E6FF6464")      // coral limit border
+        private val COLOR_DOT_NORMAL = Color.parseColor("#8BE8B9")        // mint live dot
+        private val COLOR_DOT_LIMIT = Color.parseColor("#FFFF6464")       // coral red live dot
+        private val COLOR_TEXT_PRIMARY = Color.parseColor("#F5F5F7")      // high contrast chat title
+        private val COLOR_TEXT_ACCENT = Color.parseColor("#EFE29B")       // butter-gold session timer
+        private val COLOR_TEXT_MUTED = Color.parseColor("#9E9B8E")        // muted today total
+        private val COLOR_LIMIT_ACCENT = Color.parseColor("#FFFF6464")    // coral warning text
     }
 }

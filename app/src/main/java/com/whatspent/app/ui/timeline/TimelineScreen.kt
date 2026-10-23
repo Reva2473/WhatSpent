@@ -1,15 +1,14 @@
-﻿package com.whatspent.app.ui.timeline
+package com.whatspent.app.ui.timeline
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,21 +22,14 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -55,6 +47,28 @@ import com.whatspent.app.data.model.formatDuration
 import com.whatspent.app.ui.theme.getChatColor
 import com.whatspent.app.util.TimeFormatUtils
 
+// Explicit Design System Palette
+private val ObsidianBg = Color(0xFF0B0B0D)
+private val CharcoalBento = Color(0xFF1F1F21)
+private val DarkCircleBtn = Color(0xFF262522)
+private val ButterGold = Color(0xFFEFE29B)
+private val SageMintCard = Color(0xFFBCE0D0)
+private val WarmSandCard = Color(0xFFC9BA9B)
+private val SoftOliveCard = Color(0xFFCED2BE)
+private val SoftSageListCard = Color(0xFFCBD1C4)
+private val PastelPills = listOf(
+    Color(0xFFDCE2F9), // Lavender
+    Color(0xFFCBEAF6), // Sky
+    Color(0xFFC6F0DC), // Mint
+    Color(0xFFF7F2CD)  // Cream
+)
+private val MintPositiveBadge = Color(0xFF8BE8B9)
+private val CoralAccent = Color(0xFFFF6464)
+private val TextDarkInk = Color(0xFF121413)
+private val TextMutedDark = Color(0xFF4A4D4A)
+private val TextLight = Color(0xFFF5F5F7)
+private val TextMutedLight = Color(0xFF9E9B8E)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimelineScreen(
@@ -70,18 +84,20 @@ fun TimelineScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        containerColor = ObsidianBg,
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "Session Timeline",
-                        style = MaterialTheme.typography.titleLarge,
+                        text = "Timeline",
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = TextLight,
+                        letterSpacing = (-0.3).sp
                     )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = ObsidianBg
                 )
             )
         }
@@ -91,15 +107,15 @@ fun TimelineScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Horizontal Date Strip
+            // Horizontal Date Strip with Butter-Gold Active Pill
             LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp),
+                    .padding(vertical = 6.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(availableDates) { date ->
+                itemsIndexed(availableDates) { index, date ->
                     val isSelected = date == selectedDate
                     val label = when (date) {
                         TimeFormatUtils.todayDateString() -> "Today"
@@ -107,87 +123,126 @@ fun TimelineScreen(
                         else -> TimeFormatUtils.formatReadableDate(date)
                     }
 
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { onSelectDate(date) },
-                        label = {
+                    Surface(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .clickable { onSelectDate(date) },
+                        shape = RoundedCornerShape(20.dp),
+                        color = if (isSelected) ButterGold else CharcoalBento,
+                        border = if (!isSelected) BorderStroke(1.dp, Color(0x1AFFFFFF)) else null
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
                             Text(
                                 text = label,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                fontSize = 13.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) Color(0xFF141413) else TextMutedLight
                             )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primary,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                        ),
-                        shape = RoundedCornerShape(20.dp)
+                        }
+                    }
+                }
+            }
+
+            // Daily Summary Hero Card (SageMintCard squircle)
+            DailySummaryHeroCard(
+                date = selectedDate,
+                totalDurationMs = totalDateDurationMs,
+                sessionCount = sessionCount,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+
+            // Section Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "CHRONOLOGICAL SESSIONS",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextMutedLight,
+                    letterSpacing = 1.2.sp
+                )
+                if (sessionCount > 0) {
+                    Text(
+                        text = "$sessionCount recorded",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = TextMutedLight
                     )
                 }
             }
 
-            // Daily Summary Banner
-            DailySummaryBanner(
-                date = selectedDate,
-                totalDurationMs = totalDateDurationMs,
-                sessionCount = sessionCount,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-            )
-
-            // Chronological Vertical Timeline
+            // Chronological Session List
             if (sessions.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(32.dp),
+                        .padding(24.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(28.dp),
+                        color = CharcoalBento,
+                        border = BorderStroke(1.dp, Color(0x1FFFFFFF))
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
+                        Column(
+                            modifier = Modifier.padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.History,
-                                contentDescription = null,
-                                modifier = Modifier.size(28.dp),
-                                tint = MaterialTheme.colorScheme.outline
+                            Box(
+                                modifier = Modifier
+                                    .size(54.dp)
+                                    .clip(CircleShape)
+                                    .background(DarkCircleBtn),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.History,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(26.dp),
+                                    tint = ButterGold
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Text(
+                                text = "No Sessions Recorded",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextLight
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "No conversation activity was tracked on this date.",
+                                fontSize = 13.sp,
+                                color = TextMutedLight,
+                                textAlign = TextAlign.Center
                             )
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = "No WhatsApp Sessions Recorded",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "No conversation activity was tracked on this date.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
                     }
                 }
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     itemsIndexed(
                         items = sessions,
                         key = { _, item -> item.id }
                     ) { index, item ->
-                        TimelineNodeItem(
+                        PastelSessionPill(
                             item = item,
-                            isFirst = index == 0,
-                            isLast = index == sessions.size - 1,
+                            backgroundColor = PastelPills[index % PastelPills.size],
                             onClick = { onNavigateToChatDetail(item.chatName) }
                         )
                     }
@@ -201,8 +256,11 @@ fun TimelineScreen(
     }
 }
 
+/**
+ * 32.dp squircle Hero Card styled with SageMintCard and dark ink typography.
+ */
 @Composable
-private fun DailySummaryBanner(
+private fun DailySummaryHeroCard(
     date: String,
     totalDurationMs: Long,
     sessionCount: Int,
@@ -210,8 +268,95 @@ private fun DailySummaryBanner(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLow
+        shape = RoundedCornerShape(32.dp),
+        color = SageMintCard
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(22.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text = "TOTAL TIME ON DAY",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextMutedDark,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = formatDuration(totalDurationMs),
+                        fontSize = 36.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = TextDarkInk,
+                        letterSpacing = (-0.5).sp
+                    )
+                }
+
+                // Session Count Pill Badge in #E8FCE2
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFFE8FCE2)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = TextDarkInk
+                        )
+                        Text(
+                            text = "$sessionCount ${if (sessionCount == 1) "session" else "sessions"}",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextDarkInk
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Text(
+                text = TimeFormatUtils.formatReadableDate(date),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                color = TextMutedDark
+            )
+        }
+    }
+}
+
+/**
+ * Horizontal pastel pill session row with dark ink text and crisp white duration badge.
+ */
+@Composable
+private fun PastelSessionPill(
+    item: TimelineSessionItem,
+    backgroundColor: Color,
+    onClick: () -> Unit
+) {
+    val chatColor = getChatColor(item.chatName, item.colorTag)
+    val timeRangeStr = TimeFormatUtils.formatTimeRange(item.startTime, item.endTime)
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(24.dp),
+        color = backgroundColor,
+        border = BorderStroke(1.dp, Color(0x12000000))
     ) {
         Row(
             modifier = Modifier
@@ -220,148 +365,61 @@ private fun DailySummaryBanner(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column {
-                Text(
-                    text = TimeFormatUtils.formatReadableDate(date),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = formatDuration(totalDurationMs),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.weight(1f)
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                // Colored ring dot indicator
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.6f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Schedule,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "$sessionCount ${if (sessionCount == 1) "session" else "sessions"}",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .clip(CircleShape)
+                            .background(chatColor)
                     )
                 }
-            }
-        }
-    }
-}
 
-/**
- * Vertical timeline node representing a single conversation session with connector line.
- */
-@Composable
-private fun TimelineNodeItem(
-    item: TimelineSessionItem,
-    isFirst: Boolean,
-    isLast: Boolean,
-    onClick: () -> Unit
-) {
-    val nodeColor = getChatColor(item.chatName, item.colorTag)
-    val timeRangeStr = TimeFormatUtils.formatTimeRange(item.startTime, item.endTime)
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(IntrinsicSize.Min),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Vertical Line & Dot Column
-        Box(
-            modifier = Modifier
-                .width(36.dp)
-                .fillMaxHeight(),
-            contentAlignment = Alignment.Center
-        ) {
-            // Connector line
-            Box(
-                modifier = Modifier
-                    .width(2.dp)
-                    .fillMaxHeight()
-                    .background(
-                        when {
-                            isFirst && isLast -> Color.Transparent
-                            isFirst -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                            isLast -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                            else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                        }
-                    )
-            )
-
-            // Timeline Node Circle
-            Box(
-                modifier = Modifier
-                    .size(14.dp)
-                    .clip(CircleShape)
-                    .background(nodeColor)
-            )
-        }
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        // Session Detail Card
-        ElevatedCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 5.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .clickable(onClick = onClick),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.elevatedCardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Column {
                     Text(
                         text = item.displayName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF141615),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = timeRangeStr,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = Color(0xFF4A4E4B)
                     )
                 }
+            }
 
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = nodeColor.copy(alpha = 0.15f)
-                ) {
-                    Text(
-                        text = TimeFormatUtils.formatDurationShort(item.durationMs),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = nodeColor
-                    )
-                }
+            Spacer(modifier = Modifier.width(10.dp))
+
+            // Crisp white right-hand value badge
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = Color.White,
+                shadowElevation = 0.dp
+            ) {
+                Text(
+                    text = TimeFormatUtils.formatDurationShort(item.durationMs),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF141615)
+                )
             }
         }
     }

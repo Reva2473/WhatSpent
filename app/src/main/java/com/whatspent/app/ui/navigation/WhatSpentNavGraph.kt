@@ -1,10 +1,25 @@
-﻿package com.whatspent.app.ui.navigation
+package com.whatspent.app.ui.navigation
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.History
@@ -13,20 +28,19 @@ import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -75,6 +89,12 @@ val BottomNavItems = listOf(
     Screen.Settings
 )
 
+// Pitch black and butter-gold navigation colors matching reference design
+private val NavContainerBg = Color(0xFF0B0B0D)
+private val NavActiveGold = Color(0xFFEFE29B)
+private val NavActiveIconInk = Color(0xFF141413)
+private val NavInactiveIconMuted = Color(0xFF9E9B8E)
+
 @Composable
 fun WhatSpentNavGraph(
     repository: WhatSpentRepository,
@@ -98,44 +118,86 @@ fun WhatSpentNavGraph(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        containerColor = NavContainerBg,
         bottomBar = {
             AnimatedVisibility(
                 visible = showBottomBar,
                 enter = slideInVertically(initialOffsetY = { it }),
                 exit = slideOutVertically(targetOffsetY = { it })
             ) {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    tonalElevation = MaterialTheme.colorScheme.surfaceTint.let { 3.dp }
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding(),
+                    color = NavContainerBg,
+                    tonalElevation = 0.dp
                 ) {
-                    BottomNavItems.forEach { screen ->
-                        val isSelected = currentRoute == screen.route
-                        NavigationBarItem(
-                            selected = isSelected,
-                            onClick = {
-                                if (currentRoute != screen.route) {
-                                    navController.navigate(screen.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                }
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = if (isSelected) screen.selectedIcon!! else screen.unselectedIcon!!,
-                                    contentDescription = screen.title
-                                )
-                            },
-                            label = { Text(screen.title) },
-                            colors = NavigationBarItemDefaults.colors(
-                                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                                selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                selectedTextColor = MaterialTheme.colorScheme.primary
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(76.dp)
+                            .padding(horizontal = 28.dp),
+                        horizontalArrangement = Arrangement.SpaceAround,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        BottomNavItems.forEach { screen ->
+                            val isSelected = currentRoute == screen.route
+                            val animatedScale by animateFloatAsState(
+                                targetValue = if (isSelected) 1.0f else 0.92f,
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessMediumLow
+                                ),
+                                label = "navItemScale_${screen.route}"
                             )
-                        )
+                            val iconColor by animateColorAsState(
+                                targetValue = if (isSelected) NavActiveIconInk else NavInactiveIconMuted,
+                                label = "navItemColor_${screen.route}"
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .graphicsLayer {
+                                        scaleX = animatedScale
+                                        scaleY = animatedScale
+                                    }
+                                    .clip(CircleShape)
+                                    .then(
+                                        if (isSelected) {
+                                            Modifier.background(NavActiveGold)
+                                        } else {
+                                            Modifier
+                                        }
+                                    )
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) {
+                                        if (currentRoute != screen.route) {
+                                            navController.navigate(screen.route) {
+                                                popUpTo(navController.graph.findStartDestination().id) {
+                                                    saveState = true
+                                                }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (isSelected) {
+                                        screen.selectedIcon ?: Icons.Filled.Dashboard
+                                    } else {
+                                        screen.unselectedIcon ?: Icons.Outlined.Dashboard
+                                    },
+                                    contentDescription = screen.title,
+                                    modifier = Modifier.size(24.dp),
+                                    tint = iconColor
+                                )
+                            }
+                        }
                     }
                 }
             }

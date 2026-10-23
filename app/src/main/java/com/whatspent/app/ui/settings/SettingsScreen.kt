@@ -5,7 +5,9 @@ import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,17 +35,12 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -51,7 +48,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -67,16 +63,35 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.whatspent.app.ui.theme.LivePulseGreen
 import com.whatspent.app.util.BiometricAuthHelper
 import com.whatspent.app.util.PermissionHelper
-import com.whatspent.app.util.PermissionStatusState
+
+// Explicit Design System Palette
+private val ObsidianBg = Color(0xFF0B0B0D)
+private val CharcoalBento = Color(0xFF1F1F21)
+private val DarkCircleBtn = Color(0xFF262522)
+private val ButterGold = Color(0xFFEFE29B)
+private val SageMintCard = Color(0xFFBCE0D0)
+private val SoftSageListCard = Color(0xFFCBD1C4)
+private val PastelPills = listOf(
+    Color(0xFFDCE2F9), // Lavender
+    Color(0xFFCBEAF6), // Sky
+    Color(0xFFC6F0DC), // Mint
+    Color(0xFFF7F2CD)  // Cream
+)
+private val MintPositiveBadge = Color(0xFF8BE8B9)
+private val CoralAccent = Color(0xFFFF6464)
+private val TextDarkInk = Color(0xFF121413)
+private val TextMutedDark = Color(0xFF4A4D4A)
+private val TextLight = Color(0xFFF5F5F7)
+private val TextMutedLight = Color(0xFF9E9B8E)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -127,18 +142,20 @@ fun SettingsScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        containerColor = ObsidianBg,
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "Settings & Health",
-                        style = MaterialTheme.typography.titleLarge,
+                        text = "Settings",
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = TextLight,
+                        letterSpacing = (-0.3).sp
                     )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = ObsidianBg
                 )
             )
         }
@@ -150,213 +167,270 @@ fun SettingsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            // 1. Service & Permissions Health Section
-            item(key = "permissions_health_header") {
-                SectionHeader(title = "Service & Permissions Health")
-            }
+            // (01) Permissions Health Section
+            item(key = "permissions_health_section") {
+                SectionHeader(title = "(01) Permissions Health")
+                Spacer(modifier = Modifier.height(10.dp))
 
-            item(key = "accessibility_health_card") {
-                PermissionHealthCard(
-                    title = "Accessibility Tracker Service",
-                    description = "Required to detect when WhatsApp conversations open and close locally.",
-                    isGranted = permissionState.isAccessibilityEnabled,
-                    icon = Icons.Default.Security,
-                    onGrantClick = {
-                        context.startActivity(PermissionHelper.createAccessibilitySettingsIntent())
-                    }
-                )
-            }
-
-            item(key = "notification_health_card") {
-                PermissionHealthCard(
-                    title = "Tracking & Limit Notifications",
-                    description = "Shows live tracking status and alerts you when conversation limits are reached.",
-                    isGranted = permissionState.isNotificationGranted,
-                    icon = Icons.Default.Notifications,
-                    onGrantClick = {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            runCatching {
-                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                            }.onFailure {
-                                runCatching {
-                                    context.startActivity(PermissionHelper.createNotificationSettingsIntent(context))
-                                }
-                            }
-                        } else {
-                            runCatching {
-                                context.startActivity(PermissionHelper.createNotificationSettingsIntent(context))
-                            }
-                        }
-                    }
-                )
-            }
-
-            item(key = "overlay_health_card") {
-                PermissionHealthCard(
-                    title = "Floating Overlay Pill",
-                    description = "Required to display the live timer chip over WhatsApp conversations.",
-                    isGranted = permissionState.isOverlayGranted,
-                    icon = Icons.Default.Layers,
-                    onGrantClick = {
-                        context.startActivity(PermissionHelper.createOverlayPermissionIntent(context))
-                    }
-                )
-            }
-
-            item(key = "battery_health_card") {
-                PermissionHealthCard(
-                    title = "Battery Optimization Whitelist",
-                    description = "Prevents aggressive Android battery killers from ending WhatsApp tracking.",
-                    isGranted = permissionState.isBatteryOptimizationIgnored,
-                    icon = Icons.Default.BatteryAlert,
-                    onGrantClick = {
-                        context.startActivity(PermissionHelper.createBatteryOptimizationExemptionIntent(context))
-                    }
-                )
-            }
-
-            // 2. Features & Privacy Section
-            item(key = "features_privacy_header") {
-                Spacer(modifier = Modifier.height(4.dp))
-                SectionHeader(title = "Features & Privacy")
-            }
-
-            item(key = "floating_pill_switch_card") {
-                SettingSwitchCard(
-                    title = "Floating Overlay Pill",
-                    description = "Show a compact, draggable live screen time chip over active WhatsApp chats.",
-                    icon = Icons.Default.Visibility,
-                    checked = floatingPillEnabled,
-                    onCheckedChange = { desired ->
-                        if (desired && !PermissionHelper.isOverlayPermissionGranted(context)) {
-                            Toast.makeText(
-                                context,
-                                "Please grant 'Display over other apps' first",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            context.startActivity(PermissionHelper.createOverlayPermissionIntent(context))
-                        } else {
-                            onToggleFloatingPill(desired)
-                        }
-                    }
-                )
-            }
-
-            item(key = "biometric_lock_switch_card") {
-                SettingSwitchCard(
-                    title = "Biometric App Lock",
-                    description = "Require fingerprint, face, or device PIN to access WhatSpent screen time records.",
-                    icon = Icons.Default.Fingerprint,
-                    checked = biometricLockEnabled,
-                    onCheckedChange = { desired ->
-                        if (activity != null && BiometricAuthHelper.canAuthenticate(context)) {
-                            BiometricAuthHelper.authenticate(
-                                activity = activity,
-                                title = if (desired) "Enable App Lock" else "Disable App Lock",
-                                subtitle = "Authenticate to update biometric protection",
-                                onSuccess = {
-                                    onToggleBiometricLock(desired)
-                                },
-                                onError = { errorMsg ->
-                                    Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
-                                }
-                            )
-                        } else {
-                            Toast.makeText(
-                                context,
-                                "Biometric authentication not configured on this device",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                    }
-                )
-            }
-
-            item(key = "dynamic_color_switch_card") {
-                SettingSwitchCard(
-                    title = "Material You Dynamic Colors",
-                    description = "Harmonize app colors with your Android system wallpaper theme.",
-                    icon = Icons.Default.Palette,
-                    checked = dynamicColorEnabled,
-                    onCheckedChange = onToggleDynamicColor
-                )
-            }
-
-            // 3. Data & Storage Management Section
-            item(key = "data_management_header") {
-                Spacer(modifier = Modifier.height(4.dp))
-                SectionHeader(title = "Data Management")
-            }
-
-            item(key = "data_management_card") {
-                ElevatedCard(
+                // Permissions Card in SoftSageListCard with 4 pastel pill rows
+                Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.elevatedCardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    shape = RoundedCornerShape(32.dp),
+                    color = SoftSageListCard
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Column {
+                            Text(
+                                text = "Local Monitoring System",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextDarkInk
+                            )
+                            Text(
+                                text = "WhatSpent processes all active chats directly on your device.",
+                                fontSize = 12.sp,
+                                color = TextMutedDark
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        // Row 1: Accessibility Tracker Service
+                        PastelPermissionPillRow(
+                            title = "Accessibility Tracker",
+                            description = "Detects conversation opens locally",
+                            icon = Icons.Default.Security,
+                            isGranted = permissionState.isAccessibilityEnabled,
+                            backgroundColor = PastelPills[0],
+                            onGrantClick = {
+                                context.startActivity(PermissionHelper.createAccessibilitySettingsIntent())
+                            }
+                        )
+
+                        // Row 2: Notifications
+                        PastelPermissionPillRow(
+                            title = "Tracking Notifications",
+                            description = "Foreground tracker & limit alerts",
+                            icon = Icons.Default.Notifications,
+                            isGranted = permissionState.isNotificationGranted,
+                            backgroundColor = PastelPills[1],
+                            onGrantClick = {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    runCatching {
+                                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    }.onFailure {
+                                        runCatching {
+                                            context.startActivity(PermissionHelper.createNotificationSettingsIntent(context))
+                                        }
+                                    }
+                                } else {
+                                    runCatching {
+                                        context.startActivity(PermissionHelper.createNotificationSettingsIntent(context))
+                                    }
+                                }
+                            }
+                        )
+
+                        // Row 3: Battery Optimization Whitelist
+                        PastelPermissionPillRow(
+                            title = "Battery Optimization",
+                            description = "Prevents OEM background termination",
+                            icon = Icons.Default.BatteryAlert,
+                            isGranted = permissionState.isBatteryOptimizationIgnored,
+                            backgroundColor = PastelPills[2],
+                            onGrantClick = {
+                                context.startActivity(PermissionHelper.createBatteryOptimizationExemptionIntent(context))
+                            }
+                        )
+
+                        // Row 4: Floating Overlay Pill
+                        PastelPermissionPillRow(
+                            title = "Floating Overlay Pill",
+                            description = "Draggable live timer chip over chats",
+                            icon = Icons.Default.Layers,
+                            isGranted = permissionState.isOverlayGranted,
+                            backgroundColor = PastelPills[3],
+                            onGrantClick = {
+                                context.startActivity(PermissionHelper.createOverlayPermissionIntent(context))
+                            }
+                        )
+                    }
+                }
+            }
+
+            // (02) Features & Privacy Section
+            item(key = "features_privacy_section") {
+                SectionHeader(title = "(02) Features & Privacy")
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(28.dp),
+                    color = CharcoalBento,
+                    border = BorderStroke(1.dp, Color(0x1FFFFFFF))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        FeatureSwitchRow(
+                            title = "Floating Overlay Pill",
+                            description = "Compact live screen time chip over active WhatsApp chats",
+                            icon = Icons.Default.Visibility,
+                            checked = floatingPillEnabled,
+                            onCheckedChange = { desired ->
+                                if (desired && !PermissionHelper.isOverlayPermissionGranted(context)) {
+                                    Toast.makeText(
+                                        context,
+                                        "Please grant 'Display over other apps' first",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    context.startActivity(PermissionHelper.createOverlayPermissionIntent(context))
+                                } else {
+                                    onToggleFloatingPill(desired)
+                                }
+                            }
+                        )
+
+                        Surface(
+                            modifier = Modifier.fillMaxWidth().height(1.dp),
+                            color = Color(0x14FFFFFF)
+                        ) {}
+
+                        FeatureSwitchRow(
+                            title = "Biometric App Lock",
+                            description = "Require fingerprint, face, or PIN to access WhatSpent",
+                            icon = Icons.Default.Fingerprint,
+                            checked = biometricLockEnabled,
+                            onCheckedChange = { desired ->
+                                if (activity != null && BiometricAuthHelper.canAuthenticate(context)) {
+                                    BiometricAuthHelper.authenticate(
+                                        activity = activity,
+                                        title = if (desired) "Enable App Lock" else "Disable App Lock",
+                                        subtitle = "Authenticate to update biometric protection",
+                                        onSuccess = {
+                                            onToggleBiometricLock(desired)
+                                        },
+                                        onError = { errorMsg ->
+                                            Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                                        }
+                                    )
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "Biometric authentication not configured on this device",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
+                        )
+
+                        Surface(
+                            modifier = Modifier.fillMaxWidth().height(1.dp),
+                            color = Color(0x14FFFFFF)
+                        ) {}
+
+                        FeatureSwitchRow(
+                            title = "Material You Dynamic Colors",
+                            description = "Harmonize accent colors with system theme",
+                            icon = Icons.Default.Palette,
+                            checked = dynamicColorEnabled,
+                            onCheckedChange = onToggleDynamicColor
+                        )
+                    }
+                }
+            }
+
+            // (03) Data Management Section
+            item(key = "data_management_section") {
+                SectionHeader(title = "(03) Data Management")
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(28.dp),
+                    color = CharcoalBento,
+                    border = BorderStroke(1.dp, Color(0x1FFFFFFF))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         OutlinedButton(
                             onClick = onNavigateToOnboarding,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
+                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            shape = RoundedCornerShape(22.dp),
+                            border = BorderStroke(1.dp, Color(0x33FFFFFF))
                         ) {
                             Icon(
                                 imageVector = Icons.Default.RestartAlt,
                                 contentDescription = null,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(18.dp),
+                                tint = ButterGold
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Re-open Permission Setup Wizard")
+                            Text(
+                                "Re-open Permission Setup Wizard",
+                                color = TextLight,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
 
-                        FilledTonalButton(
+                        Button(
                             onClick = {
                                 onSeedDemoData()
                                 Toast.makeText(context, "Sample analytics loaded!", Toast.LENGTH_SHORT).show()
                             },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
+                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            shape = RoundedCornerShape(22.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = ButterGold,
+                                contentColor = Color(0xFF141413)
+                            )
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
                                 contentDescription = null,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(18.dp),
+                                tint = Color(0xFF141413)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Load Sample Analytics Data")
+                            Text("Load Sample Analytics", fontWeight = FontWeight.Bold)
                         }
 
                         Button(
                             onClick = { showClearDataDialog = true },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            shape = RoundedCornerShape(22.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                                containerColor = CoralAccent,
+                                contentColor = Color.White
                             )
                         ) {
                             Icon(
                                 imageVector = Icons.Default.DeleteSweep,
                                 contentDescription = null,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(18.dp),
+                                tint = Color.White
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Clear All Tracking Data")
+                            Text("Clear All Tracking Data", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
             }
 
             item {
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(28.dp))
             }
         }
     }
@@ -364,10 +438,19 @@ fun SettingsScreen(
     if (showClearDataDialog) {
         AlertDialog(
             onDismissRequest = { showClearDataDialog = false },
-            title = { Text("Clear All Tracking Data?") },
+            containerColor = CharcoalBento,
+            shape = RoundedCornerShape(28.dp),
+            title = {
+                Text(
+                    text = "Clear All Tracking Data?",
+                    fontWeight = FontWeight.Bold,
+                    color = TextLight
+                )
+            },
             text = {
                 Text(
-                    "This will permanently delete all logged WhatsApp chat sessions and reset all conversation aliases and daily limits. This action cannot be undone."
+                    "This will permanently delete all logged WhatsApp sessions and reset all conversation aliases and daily limits. This action cannot be undone.",
+                    color = TextMutedLight
                 )
             },
             confirmButton = {
@@ -377,16 +460,18 @@ fun SettingsScreen(
                         showClearDataDialog = false
                         Toast.makeText(context, "All tracking data cleared.", Toast.LENGTH_SHORT).show()
                     },
+                    shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
+                        containerColor = CoralAccent,
+                        contentColor = Color.White
                     )
                 ) {
-                    Text("Clear All Data")
+                    Text("Clear All Data", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showClearDataDialog = false }) {
-                    Text("Cancel")
+                    Text("Cancel", color = TextMutedLight)
                 }
             }
         )
@@ -397,72 +482,74 @@ fun SettingsScreen(
 private fun SectionHeader(title: String) {
     Text(
         text = title,
-        style = MaterialTheme.typography.titleSmall,
+        fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
+        color = ButterGold,
+        letterSpacing = 1.sp,
+        modifier = Modifier.padding(start = 4.dp)
     )
 }
 
+/**
+ * Pastel pill row inside SoftSageListCard.
+ */
 @Composable
-private fun PermissionHealthCard(
+private fun PastelPermissionPillRow(
     title: String,
     description: String,
-    isGranted: Boolean,
     icon: ImageVector,
+    isGranted: Boolean,
+    backgroundColor: Color,
     onGrantClick: () -> Unit
 ) {
-    ElevatedCard(
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = RoundedCornerShape(22.dp),
+        color = backgroundColor,
+        border = BorderStroke(1.dp, Color(0x12000000))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.weight(1f)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(34.dp)
                         .clip(CircleShape)
-                        .background(
-                            if (isGranted) LivePulseGreen.copy(alpha = 0.15f)
-                            else MaterialTheme.colorScheme.errorContainer
-                        ),
+                        .background(Color.White.copy(alpha = 0.6f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = if (isGranted) LivePulseGreen else MaterialTheme.colorScheme.error
+                        modifier = Modifier.size(18.dp),
+                        tint = TextDarkInk
                     )
                 }
 
                 Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                    Text(
+                        text = title,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextDarkInk,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                     Text(
                         text = description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontSize = 11.sp,
+                        color = TextMutedDark,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -472,40 +559,41 @@ private fun PermissionHealthCard(
             if (isGranted) {
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = LivePulseGreen.copy(alpha = 0.15f)
+                    color = MintPositiveBadge
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = "Active",
-                            modifier = Modifier.size(14.dp),
-                            tint = LivePulseGreen
+                            modifier = Modifier.size(13.dp),
+                            tint = Color(0xFF0D2618)
                         )
                         Text(
-                            text = "Ready",
-                            style = MaterialTheme.typography.labelSmall,
+                            text = "Active",
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = LivePulseGreen
+                            color = Color(0xFF0D2618)
                         )
                     }
                 }
             } else {
-                Button(
-                    onClick = onGrantClick,
-                    shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
+                Surface(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable(onClick = onGrantClick),
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFF141413)
                 ) {
                     Text(
                         text = "Grant",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                 }
             }
@@ -513,74 +601,68 @@ private fun PermissionHealthCard(
     }
 }
 
+/**
+ * Switch row inside CharcoalBento card.
+ */
 @Composable
-private fun SettingSwitchCard(
+private fun FeatureSwitchRow(
     title: String,
     description: String,
     icon: ImageVector,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
-    ElevatedCard(
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.weight(1f)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.weight(1f)
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                .background(DarkCircleBtn),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                Column {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = ButterGold
+                )
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Switch(
-                checked = checked,
-                onCheckedChange = onCheckedChange,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.primary,
-                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+            Column {
+                Text(
+                    text = title,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextLight
                 )
-            )
+                Text(
+                    text = description,
+                    fontSize = 12.sp,
+                    color = TextMutedLight
+                )
+            }
         }
+
+        Spacer(modifier = Modifier.width(10.dp))
+
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color(0xFF141413),
+                checkedTrackColor = ButterGold,
+                uncheckedTrackColor = Color(0xFF333336),
+                uncheckedThumbColor = TextMutedLight
+            )
+        )
     }
 }

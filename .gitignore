@@ -22,3 +22,5 @@ local.properties
 # Built-in OS files
 Thumbs.db
 Desktop.ini
+
+.kotlin/
