@@ -1,4 +1,4 @@
-﻿package com.whatspent.app.service
+package com.whatspent.app.service
 
 import android.animation.ValueAnimator
 import android.content.Context
@@ -67,6 +67,22 @@ class FloatingPillOverlayManager(private val context: Context) {
             gravity = Gravity.TOP or Gravity.START
             x = dpToPx(16)
             y = dpToPx(110) // Below standard WhatsApp action bar
+            runCatching {
+                @Suppress("DEPRECATION")
+                val display = windowManager.defaultDisplay
+                val activeMode = display?.mode
+                val bestMode = display?.supportedModes
+                    ?.filter {
+                        activeMode == null ||
+                            (it.physicalWidth == activeMode.physicalWidth &&
+                                it.physicalHeight == activeMode.physicalHeight)
+                    }
+                    ?.maxByOrNull { it.refreshRate }
+                if (bestMode != null) {
+                    preferredDisplayModeId = bestMode.modeId
+                    preferredRefreshRate = bestMode.refreshRate
+                }
+            }
         }
     }
 

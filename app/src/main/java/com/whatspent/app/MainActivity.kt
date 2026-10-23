@@ -1,6 +1,8 @@
-﻿package com.whatspent.app
+package com.whatspent.app
 
+import android.os.Build
 import android.os.Bundle
+import android.view.Display
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -52,6 +54,7 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        enableHighRefreshRate()
 
         val app = application as WhatSpentApplication
 
@@ -102,6 +105,48 @@ class MainActivity : FragmentActivity() {
                         WhatSpentNavGraph(repository = app.repository)
                     }
                 }
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        enableHighRefreshRate()
+    }
+
+    /**
+     * Explicitly negotiates the highest supported refresh rate (e.g., 120Hz / 144Hz)
+     * at the native panel resolution so OEM display controllers do not throttle WhatSpent to 60Hz.
+     */
+    private fun enableHighRefreshRate() {
+        runCatching {
+            val currentDisplay: Display? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                display
+            } else {
+                @Suppress("DEPRECATION")
+                windowManager.defaultDisplay
+            }
+
+            val supportedModes = currentDisplay?.supportedModes ?: return
+            val activeMode = currentDisplay.mode
+
+            // Pick highest refresh rate mode matching current physical resolution
+            val bestMode = supportedModes
+                .filter {
+                    it.physicalWidth == activeMode.physicalWidth &&
+                        it.physicalHeight == activeMode.physicalHeight
+                }
+                .maxByOrNull { it.refreshRate }
+                ?: supportedModes.maxByOrNull { it.refreshRate }
+                ?: return
+
+            val layoutParams = window.attributes
+            if (layoutParams.preferredDisplayModeId != bestMode.modeId ||
+                layoutParams.preferredRefreshRate != bestMode.refreshRate
+            ) {
+                layoutParams.preferredDisplayModeId = bestMode.modeId
+                layoutParams.preferredRefreshRate = bestMode.refreshRate
+                window.attributes = layoutParams
             }
         }
     }
