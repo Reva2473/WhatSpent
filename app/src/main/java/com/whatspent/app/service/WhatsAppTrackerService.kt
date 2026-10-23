@@ -1,4 +1,4 @@
-﻿package com.whatspent.app.service
+package com.whatspent.app.service
 
 import android.accessibilityservice.AccessibilityService
 import android.content.BroadcastReceiver
@@ -102,7 +102,14 @@ class WhatsAppTrackerService : AccessibilityService() {
         }
 
         overlayManager = FloatingPillOverlayManager(this)
-        sessionManager = ActiveSessionManager(this, repository, overlayManager, serviceScope)
+        sessionManager = ActiveSessionManager(
+            context = this,
+            repository = repository,
+            overlayManager = overlayManager,
+            scope = serviceScope,
+            isStillInActiveConversation = { isCurrentlyInWhatsAppConversation() }
+        )
+        activeInstance = this
 
         // Create notification channels and promote to foreground service
         NotificationHelper.createNotificationChannels(this)
@@ -133,17 +140,21 @@ class WhatsAppTrackerService : AccessibilityService() {
 
         // 1. User switched outside WhatsApp
         if (!isTargetApp) {
-            if (eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-                // Ignore transient system UI and soft keyboards
-                val isSystemUiOrKeyboard = packageName.startsWith("com.android.systemui") ||
-                        packageName.contains("inputmethod") ||
-                        packageName.contains("keyboard") ||
-                        packageName.contains("gboard")
+            if (!sessionManager.hasActiveSession()) return
 
-                if (!isSystemUiOrKeyboard) {
-                    sessionManager.onConversationExited("App switched: $packageName")
-                    lastKnownChatTitle = null
-                }
+            // Ignore soft keyboards and our own overlay view updates
+            val isKeyboard = packageName.contains("inputmethod") ||
+                    packageName.contains("keyboard") ||
+                    packageName.contains("gboard") ||
+                    packageName.contains("swiftkey") ||
+                    packageName.contains("honeyboard")
+
+            if (isKeyboard) return
+
+            // If user opened WhatSpent or switched to launcher / another app, exit session immediately
+            if (eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || !isCurrentlyInWhatsAppConversation()) {
+                sessionManager.onConversationExited("App switched: $packageName")
+                lastKnownChatTitle = null
             }
             return
         }
@@ -374,6 +385,30 @@ class WhatsAppTrackerService : AccessibilityService() {
         return powerManager?.isInteractive ?: true
     }
 
+    /**
+     * Verifies that the active foreground window on screen right now is still a WhatsApp conversation.
+     * Prevents stale sessions if the user exits via gesture navigation or app switcher.
+     */
+    private fun isCurrentlyInWhatsAppConversation(): Boolean {
+        if (!isScreenInteractive || !checkScreenInteractive()) return false
+        val rootNode = try {
+            rootInActiveWindow
+        } catch (_: Exception) {
+            null
+        } ?: return false
+
+        val rootPackage = rootNode.packageName?.toString() ?: return false
+        if (rootPackage != WHATSAPP_PACKAGE && rootPackage != WHATSAPP_BUSINESS_PACKAGE) {
+            return false
+        }
+
+        if (isChatListOrTabsScreen(rootNode)) {
+            return false
+        }
+
+        return !extractActiveConversationTitle(rootNode, null).isNullOrBlank()
+    }
+
     private fun promoteToForegroundService() {
         val initialNotification = NotificationHelper.buildForegroundNotification(
             this,
@@ -415,6 +450,9 @@ class WhatsAppTrackerService : AccessibilityService() {
     override fun onDestroy() {
         super.onDestroy()
         _isInstanceRunning.value = false
+        if (activeInstance === this) {
+            activeInstance = null
+        }
 
         try {
             unregisterReceiver(screenReceiver)
@@ -435,6 +473,19 @@ class WhatsAppTrackerService : AccessibilityService() {
 
         private val _isInstanceRunning = MutableStateFlow(false)
         val isServiceRunning: StateFlow<Boolean> = _isInstanceRunning.asStateFlow()
+
+        @Volatile
+        private var activeInstance: WhatsAppTrackerService? = null
+
+        /**
+         * Immediately stops any active WhatsApp session and hides the floating pill when WhatSpent is in foreground.
+         */
+        fun forceExitActiveSession(reason: String) {
+            activeInstance?.let { service ->
+                service.lastKnownChatTitle = null
+                service.sessionManager.onConversationExited(reason)
+            }
+        }
 
         private val KNOWN_NON_CONVERSATION_CLASSES = listOf(
             "HomeActivity",

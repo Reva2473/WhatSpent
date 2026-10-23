@@ -1,4 +1,4 @@
-﻿package com.whatspent.app.service
+package com.whatspent.app.service
 
 import android.content.Context
 import com.whatspent.app.data.local.entity.ChatSessionEntity
@@ -35,7 +35,8 @@ class ActiveSessionManager(
     private val context: Context,
     private val repository: WhatSpentRepository,
     private val overlayManager: FloatingPillOverlayManager,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val isStillInActiveConversation: () -> Boolean = { true }
 ) {
 
     private val lock = Any()
@@ -240,23 +241,27 @@ class ActiveSessionManager(
                     val isPillEnabled = repository.preferences.isFloatingPillEnabledSync() &&
                             PermissionHelper.isOverlayPermissionGranted(context)
 
-                    // BATTERY OPTIMIZATION:
-                    // If floating pill is disabled, there is no need to wake the CPU every 1000ms.
-                    // In that case, sleep in 60-second intervals to drastically conserve battery.
-                    val sleepIntervalMs = if (isPillEnabled) PILL_TICK_INTERVAL_MS else IDLE_TICK_INTERVAL_MS
+                    val sleepIntervalMs = if (isPillEnabled) PILL_TICK_INTERVAL_MS else ACTIVE_VERIFY_INTERVAL_MS
                     delay(sleepIntervalMs)
 
-                    val now = System.currentTimeMillis()
-                    val sessionDurationMs = synchronized(lock) {
-                        if (activeChatName != chatName) return@launch
-                        now - sessionStartEpochMs
+                    // Verify the foreground window is still an active WhatsApp conversation
+                    if (!isStillInActiveConversation()) {
+                        finalizeCurrentSessionInternal("Foreground window left WhatsApp conversation")
+                        return@launch
                     }
-                    val totalChatTodayMs = baseChatTodayMsAtCheckpoint + sessionDurationMs
+
+                    val now = System.currentTimeMillis()
+                    val (sessionDurationMs, unpersistedDeltaMs) = synchronized(lock) {
+                        if (activeChatName != chatName) return@launch
+                        Pair(now - sessionStartEpochMs, now - lastCheckpointEpochMs)
+                    }
+                    val totalChatTodayMs = baseChatTodayMsAtCheckpoint + unpersistedDeltaMs
+                    val totalTodayMs = baseTodayTotalMsAtCheckpoint + unpersistedDeltaMs
 
                     // Check daily chat limit
                     checkDailyLimit(chatName, displayName, totalChatTodayMs)
 
-                    // 1. Update Floating Pill UI
+                    // 1. Update Floating Pill UI (or hide if user disabled it in settings)
                     if (isPillEnabled) {
                         val limitMinutes = dailyLimitMinutesForActiveChat
                         val isOverLimit = limitMinutes != null && totalChatTodayMs >= (limitMinutes * 60_000L)
@@ -266,20 +271,46 @@ class ActiveSessionManager(
                             chatTodayTotalMs = totalChatTodayMs,
                             isOverLimit = isOverLimit
                         )
+                    } else {
+                        overlayManager.hide()
                     }
 
-                    // 2. Periodic 60-second Room DB Checkpoint
+                    // 2. Keep in-memory live state fresh without DB queries
+                    val currentLive = repository.liveSessionState.value
+                    val topChatDuration = maxOf(currentLive.topChatDurationMs, totalChatTodayMs)
+                    val topChat = if (totalChatTodayMs >= currentLive.topChatDurationMs) displayName else currentLive.topChatName
+                    repository.updateLiveSessionState(
+                        ActiveSessionState(
+                            isTracking = true,
+                            currentChatName = chatName,
+                            currentDisplayName = displayName,
+                            sessionStartTimeMs = sessionStartEpochMs,
+                            currentSessionDurationMs = sessionDurationMs,
+                            currentChatTodayTotalMs = totalChatTodayMs,
+                            todayTotalMs = totalTodayMs,
+                            topChatName = topChat,
+                            topChatDurationMs = topChatDuration,
+                            unpersistedDeltaMs = unpersistedDeltaMs
+                        )
+                    )
+
+                    // 3. Periodic 60-second Room DB Checkpoint
                     if (now - lastCheckpointTime >= CHECKPOINT_INTERVAL_MS) {
                         checkpointSession(chatName, now)
                         lastCheckpointTime = now
+                        synchronized(lock) {
+                            if (activeChatName == chatName) {
+                                baseChatTodayMsAtCheckpoint = totalChatTodayMs
+                                baseTodayTotalMsAtCheckpoint = totalTodayMs
+                            }
+                        }
                     }
 
-                    // 3. Periodic Notification Update (throttled to at most once per 60s)
+                    // 4. Periodic Notification Update (throttled to at most once per 60s)
                     if (now - lastNotificationTime >= NOTIFICATION_UPDATE_INTERVAL_MS) {
-                        val unpersistedDelta = now - lastCheckpointTime
-                        val summary = repository.getTodaySummaryForService(chatName, unpersistedDelta)
+                        val currentUnpersisted = synchronized(lock) { now - lastCheckpointEpochMs }
+                        val summary = repository.getTodaySummaryForService(chatName, currentUnpersisted)
                         NotificationHelper.updateForegroundNotification(context, summary)
-                        repository.updateLiveSessionState(summary)
                         lastNotificationTime = now
                     }
                 }
@@ -353,6 +384,6 @@ class ActiveSessionManager(
         private const val CHECKPOINT_INTERVAL_MS = 60_000L
         private const val NOTIFICATION_UPDATE_INTERVAL_MS = 60_000L
         private const val PILL_TICK_INTERVAL_MS = 1_000L
-        private const val IDLE_TICK_INTERVAL_MS = 60_000L
+        private const val ACTIVE_VERIFY_INTERVAL_MS = 2_000L
     }
 }

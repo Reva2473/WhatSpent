@@ -1,10 +1,12 @@
-﻿package com.whatspent.app.data.model
+package com.whatspent.app.data.model
 
+import androidx.compose.runtime.Immutable
 import java.util.Locale
 
 /**
  * Summary of usage metrics for a specific chat today.
  */
+@Immutable
 data class ChatSummary(
     val chatName: String,
     val displayName: String,
@@ -22,6 +24,7 @@ data class ChatSummary(
 /**
  * Aggregated usage data point for chart display.
  */
+@Immutable
 data class DailyUsagePoint(
     val date: String,
     val dayLabel: String,
@@ -34,6 +37,7 @@ data class DailyUsagePoint(
 /**
  * Individual session entry displayed in chronological or timeline views.
  */
+@Immutable
 data class TimelineSessionItem(
     val id: Long,
     val chatName: String,
@@ -51,6 +55,7 @@ data class TimelineSessionItem(
 /**
  * State representing the currently running or recently stopped tracking session.
  */
+@Immutable
 data class ActiveSessionState(
     val isTracking: Boolean = false,
     val currentChatName: String? = null,
@@ -67,6 +72,7 @@ data class ActiveSessionState(
 /**
  * Comprehensive UI state for the main Dashboard screen.
  */
+@Immutable
 data class DashboardUiState(
     val todayTotalMs: Long = 0L,
     val yesterdayTotalMs: Long = 0L,
@@ -96,6 +102,7 @@ enum class DetailRange(val days: Int, val label: String) {
 /**
  * Complete UI state for the Chat Detail & Settings screen.
  */
+@Immutable
 data class ChatDetailUiState(
     val chatName: String = "",
     val displayName: String = "",

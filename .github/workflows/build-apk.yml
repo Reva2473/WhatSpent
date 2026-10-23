@@ -26,19 +26,19 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+      - name: Build R8-Optimized Release APK
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Copy APK with clean filename
         run: |
           mkdir -p dist
-          cp app/build/outputs/apk/debug/app-debug.apk dist/WhatSpent-v1.0.0-debug.apk
+          cp app/build/outputs/apk/release/app-release.apk dist/WhatSpent-v1.0.0.apk
 
       - name: Upload WhatSpent APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: WhatSpent-APK
-          path: dist/WhatSpent-v1.0.0-debug.apk
+          path: dist/WhatSpent-v1.0.0.apk
           if-no-files-found: error
 
       - name: Publish APK to GitHub Releases
@@ -46,9 +46,9 @@ jobs:
         if: github.ref == 'refs/heads/main'
         with:
           tag_name: v1.0.${{ github.run_number }}
-          name: "WhatSpent v1.0.${{ github.run_number }} (Installable APK)"
+          name: "WhatSpent v1.0.${{ github.run_number }} (120Hz R8-Optimized APK)"
           body: |
             ### WhatSpent — Low-Battery WhatsApp Conversation Time Tracker
-            Download **`WhatSpent-v1.0.0-debug.apk`** below to install directly on your Android device (Android 8.0 / API 26+).
-          files: dist/WhatSpent-v1.0.0-debug.apk
+            Download **`WhatSpent-v1.0.0.apk`** below to install directly on your Android device (Android 8.0 / API 26+).
+          files: dist/WhatSpent-v1.0.0.apk
           prerelease: false

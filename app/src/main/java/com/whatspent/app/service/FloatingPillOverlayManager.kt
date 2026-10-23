@@ -172,6 +172,7 @@ class FloatingPillOverlayManager(private val context: Context) {
             val vPad = dpToPx(7)
             setPadding(hPad, vPad, hPad, vPad)
             elevation = dpToPx(6).toFloat()
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
         }
 
         // 1. Pulsing Status Indicator Dot

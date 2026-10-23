@@ -1,4 +1,4 @@
-﻿package com.whatspent.app.ui.dashboard
+package com.whatspent.app.ui.dashboard
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -67,11 +67,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -116,18 +117,6 @@ fun DashboardScreen(
     var selectedChartTab by remember { mutableIntStateOf(0) } // 0: Donut, 1: 7-Day Bar
     var selectedDonutChat by remember { mutableStateOf<String?>(null) }
 
-    // Pulsing animation for tracking indicator
-    val infiniteTransition = rememberInfiniteTransition(label = "pulseTransition")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseAlpha"
-    )
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -160,12 +149,9 @@ fun DashboardScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(8.dp)
-                                        .clip(CircleShape)
-                                        .alpha(if (uiState.activeSession.isTracking) pulseAlpha else 1f)
-                                        .background(LivePulseGreen)
+                                StatusDot(
+                                    isPulsing = uiState.activeSession.isTracking,
+                                    size = 8.dp
                                 )
                                 Text(
                                     text = if (uiState.activeSession.isTracking) "Tracking" else "Active",
@@ -239,15 +225,10 @@ fun DashboardScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // 1. Live "Now Tracking" Banner Card
-                item(key = "live_tracking_banner") {
-                    AnimatedVisibility(
-                        visible = uiState.activeSession.isTracking,
-                        enter = fadeIn() + expandVertically(),
-                        exit = fadeOut() + shrinkVertically()
-                    ) {
+                if (uiState.activeSession.isTracking) {
+                    item(key = "live_tracking_banner", contentType = "banner") {
                         LiveTrackingBanner(
                             activeSession = uiState.activeSession,
-                            pulseAlpha = pulseAlpha,
                             onClick = {
                                 uiState.activeSession.currentChatName?.let { onNavigateToChatDetail(it) }
                             }
@@ -374,12 +355,48 @@ fun DashboardScreen(
 }
 
 /**
+ * GPU-accelerated status indicator dot that isolates any pulsing animation to the Draw phase,
+ * avoiding full-screen recompositions during LazyColumn scrolling.
+ */
+@Composable
+private fun StatusDot(
+    isPulsing: Boolean,
+    size: Dp
+) {
+    if (isPulsing) {
+        val infiniteTransition = rememberInfiniteTransition(label = "pulseTransition")
+        val pulseAlpha = infiniteTransition.animateFloat(
+            initialValue = 0.35f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(800),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "pulseAlpha"
+        )
+        Box(
+            modifier = Modifier
+                .size(size)
+                .graphicsLayer { alpha = pulseAlpha.value }
+                .clip(CircleShape)
+                .background(LivePulseGreen)
+        )
+    } else {
+        Box(
+            modifier = Modifier
+                .size(size)
+                .clip(CircleShape)
+                .background(LivePulseGreen)
+        )
+    }
+}
+
+/**
  * Animated Live Tracking Card displayed at top when a conversation is actively open.
  */
 @Composable
 private fun LiveTrackingBanner(
     activeSession: com.whatspent.app.data.model.ActiveSessionState,
-    pulseAlpha: Float,
     onClick: () -> Unit
 ) {
     ElevatedCard(
@@ -404,12 +421,9 @@ private fun LiveTrackingBanner(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.weight(1f)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .clip(CircleShape)
-                        .alpha(pulseAlpha)
-                        .background(LivePulseGreen)
+                StatusDot(
+                    isPulsing = true,
+                    size = 12.dp
                 )
                 Column {
                     Text(

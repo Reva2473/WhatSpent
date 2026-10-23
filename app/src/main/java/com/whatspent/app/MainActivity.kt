@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.whatspent.app.service.WhatsAppTrackerService
 import com.whatspent.app.ui.navigation.WhatSpentNavGraph
 import com.whatspent.app.ui.theme.WhatSpentTheme
 import com.whatspent.app.util.BiometricAuthHelper
@@ -112,6 +113,8 @@ class MainActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume()
         enableHighRefreshRate()
+        // User is inside WhatSpent, so they cannot be actively in WhatsApp
+        WhatsAppTrackerService.forceExitActiveSession("WhatSpent app in foreground")
     }
 
     /**

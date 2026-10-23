@@ -1,4 +1,4 @@
-﻿package com.whatspent.app.ui.components
+package com.whatspent.app.ui.components
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -87,17 +87,20 @@ fun AnimatedChatDonutChart(
         chatSummaries.filter { !it.isExcluded && it.durationMs > 0L }.take(7)
     }
 
-    // Animation progress from 0f to 1f
-    val animationProgress = remember { Animatable(0f) }
-    LaunchedEffect(activeSummaries) {
-        animationProgress.snapTo(0f)
-        animationProgress.animateTo(
-            targetValue = 1f,
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioLowBouncy,
-                stiffness = Spring.StiffnessLow
+    // Run entry animation only when the set of chat names changes, not on every scroll or 1s timer tick
+    val chatNamesKey = remember(activeSummaries) { activeSummaries.map { it.chatName } }
+    val animationProgress = remember { Animatable(1f) }
+    LaunchedEffect(chatNamesKey) {
+        if (activeSummaries.isNotEmpty()) {
+            animationProgress.snapTo(0.25f)
+            animationProgress.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                )
             )
-        )
+        }
     }
 
     // Compute arc segments
@@ -366,15 +369,16 @@ fun SevenDayUsageBarChart(
 
     var selectedPointIndex by remember { mutableStateOf<Int?>(null) }
 
-    // Spring animation for bar heights
-    val animationProgress = remember { Animatable(0f) }
-    LaunchedEffect(points) {
-        animationProgress.snapTo(0f)
+    // Spring animation for bar heights keyed on date range rather than every 1s duration tick
+    val datesKey = remember(points) { points.map { it.date } }
+    val animationProgress = remember { Animatable(1f) }
+    LaunchedEffect(datesKey) {
+        animationProgress.snapTo(0.25f)
         animationProgress.animateTo(
             targetValue = 1f,
             animationSpec = spring(
-                dampingRatio = Spring.DampingRatioLowBouncy,
-                stiffness = Spring.StiffnessLow
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessMediumLow
             )
         )
     }

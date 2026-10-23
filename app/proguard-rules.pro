@@ -1,6 +1,9 @@
-﻿# Proguard rules for WhatSpent
+# Proguard rules for WhatSpent
+-dontobfuscate
 
-# Room Database
+# Room Database & Entities / Tuples
+-keep class com.whatspent.app.data.local.** { *; }
+-keep class com.whatspent.app.data.model.** { *; }
 -keepclassmembers class * extends androidx.room.RoomDatabase {
     <init>();
 }
