@@ -5,6 +5,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
@@ -15,6 +16,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,13 +25,16 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -42,20 +47,19 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.FolderOpen
-import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.NorthEast
+import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -72,8 +76,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
@@ -81,6 +85,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -96,66 +101,122 @@ import com.whatspent.app.data.model.ChatSummary
 import com.whatspent.app.data.model.DailyUsagePoint
 import com.whatspent.app.data.model.DashboardUiState
 import com.whatspent.app.data.model.formatDurationWithSeconds
-import com.whatspent.app.ui.theme.getChatColor
 import com.whatspent.app.util.PermissionHelper
 import com.whatspent.app.util.TimeFormatUtils
+import java.util.Locale
+import kotlin.math.abs
 import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.sin
 import kotlin.math.sqrt
 
-// ==========================================
-// PALETTE & COLOR CONSTANTS (Reference Image)
-// ==========================================
-private val ColorObsidianBg = Color(0xFF0B0B0D)
-private val ColorDarkCharcoalCard = Color(0xFF1F1F21)
-private val ColorDarkCharcoalButton = Color(0xFF262522)
-private val ColorDarkBorder = Color(0xFF2C2C2E)
+// ============================================================================
+// WHATSPENT DESIGN SYSTEM TOKENS (Obsidian + Neon Acid-Lime + Periwinkle)
+// Direct Color(0xFF...) constants to guarantee zero cross-worker compile conflicts
+// ============================================================================
 
-private val ColorButterGold = Color(0xFFEFE29B)
-private val ColorButterGoldDark = Color(0xFF141413)
-private val ColorGoldMuted = Color(0xFFD9D2B0)
+private val BgObsidian = Color(0xFF0B0B0D)          // True pitch-black app canvas
+private val SurfaceCharcoal = Color(0xFF17171A)     // Deep dark charcoal card surfaces
+private val ElevatedCharcoal = Color(0xFF1E1E22)    // Elevated pill tracks & borders
+private val CircleButtonBg = Color(0xFF1C1C20)      // Circular icon button surface
+private val BarInactiveCharcoal = Color(0xFF222227) // Inactive/unselected chart bars
+private val TooltipDarkSurface = Color(0xFF232329)  // Floating dark tooltip pill
+private val TooltipBorder = Color(0xFF34343C)       // Tooltip border
+private val BorderSubtle = Color(0xFF28282D)        // Subtle 1.dp borders & dashed gridlines
 
-private val ColorTextWhite = Color(0xFFF5F5F7)
-private val ColorTextMuted = Color(0xFF8E8E93)
-private val ColorTextSubtle = Color(0xFF6E6E73)
+private val AcidLime = Color(0xFFE5FA6B)            // Neon Acid-Lime primary active highlight
+private val AcidLimeInk = Color(0xFF0E0F0A)         // Dark ink text on AcidLime
+private val PeriwinkleViolet = Color(0xFF9F8FEF)    // Signature Periwinkle Violet chart highlight
+private val PeriwinkleLight = Color(0xFFB4A6F8)     // Top glow tint on Periwinkle bar
 
-private val ColorHeroSage = Color(0xFFBCE0D0)
-private val ColorHeroSageSubtext = Color(0xFF566E63)
-private val ColorHeroSageBorder = Color(0xFF6E7F77)
-private val ColorHeroPillBg = Color(0xFFE8FCE2)
+private val TextWhite = Color(0xFFF6F6F9)           // Crisp white primary text
+private val TextMutedGray = Color(0xFF6E6E77)        // Two-tone secondary time units (e.g. 14m, 32s)
+private val TextSubtleLabel = Color(0xFF8A8A93)      // Subtle gray for subtitles, counts, & axes
 
-private val ColorTrendSand = Color(0xFFC9BA9B)
-private val ColorTrendSandSubtext = Color(0xFF5C5343)
-private val ColorTrendSandCallout = Color(0xFFDAF5E6)
+// Additional harmonious dark accents for distribution & avatars
+private val CyberMint = Color(0xFF63E6BE)
+private val ElectricSky = Color(0xFF74C0FC)
+private val SoftCoral = Color(0xFFFF8787)
+private val WarmAmber = Color(0xFFFCC419)
+private val OrchidViolet = Color(0xFFE599F7)
 
-private val ColorBarOlive = Color(0xFFCED2BE)
-private val ColorBarOliveSubtext = Color(0xFF4A4E40)
-private val ColorCapsulePeach = Color(0xFFF3B282)
-
-private val ColorSummarySage = Color(0xFFCBD1C4)
-private val ColorSummarySageSubtext = Color(0xFF565E52)
-
-private val ColorBadgeGreen = Color(0xFF8BE8B9)
-private val ColorBadgeGreenDark = Color(0xFF0D2618)
-private val ColorCoralRed = Color(0xFFFF6464)
-
-// Arch Gauge Colors
-private val ArchColors = listOf(
-    Color(0xFF63C89A), // Mint Emerald
-    Color(0xFFAEF075), // Lime Green
-    Color(0xFFFFB978), // Warm Peach
-    Color(0xFFFF8A7A), // Coral
-    Color(0xFFA5B4FC)  // Periwinkle
+private val ChatAccentPalette = listOf(
+    PeriwinkleViolet,
+    AcidLime,
+    CyberMint,
+    ElectricSky,
+    SoftCoral,
+    WarmAmber,
+    OrchidViolet
 )
 
-// Pastel Pill Rows for Conversation Summary
-private val PastelRowColors = listOf(
-    Color(0xFFDCE2F9), // Lavender
-    Color(0xFFCBEAF6), // Sky
-    Color(0xFFC6F0DC), // Mint
-    Color(0xFFF7F2CD)  // Cream
-)
+/**
+ * Deterministically maps a chat to an accent color from the dark palette.
+ */
+private fun getChatAccentColor(chatName: String, customColorTag: Int? = null): Color {
+    if (customColorTag != null) {
+        return Color(customColorTag)
+    }
+    val hash = abs(chatName.hashCode())
+    return ChatAccentPalette[hash % ChatAccentPalette.size]
+}
+
+/**
+ * Helper holder for Two-Tone duration typography (matching "24.446 00" in the reference image).
+ */
+private data class TwoToneDuration(val primary: String, val secondary: String)
+
+/**
+ * Splits duration into primary and secondary parts for high-impact two-tone typography.
+ */
+private fun splitDurationTwoTone(durationMs: Long): TwoToneDuration {
+    if (durationMs <= 0L) {
+        return TwoToneDuration("0m", " 00s")
+    }
+    val totalSeconds = durationMs / 1000
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+
+    return when {
+        hours > 0 -> {
+            TwoToneDuration("${hours}h", " ${minutes}m")
+        }
+        minutes > 0 -> {
+            TwoToneDuration("${minutes}m", " ${String.format(Locale.US, "%02d", seconds)}s")
+        }
+        else -> {
+            TwoToneDuration("$seconds", "s")
+        }
+    }
+}
+
+/**
+ * Splits duration into primary and secondary parts for compact conversation rows.
+ */
+private fun splitDurationTwoToneShort(durationMs: Long): TwoToneDuration {
+    if (durationMs <= 0L) {
+        return TwoToneDuration("0m", "")
+    }
+    val totalSeconds = durationMs / 1000
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+
+    return when {
+        hours > 0 -> {
+            if (minutes > 0) TwoToneDuration("${hours}h", " ${minutes}m") else TwoToneDuration("${hours}h", "")
+        }
+        minutes > 0 -> {
+            TwoToneDuration("${minutes}m", if (seconds > 0) " ${seconds}s" else "")
+        }
+        else -> {
+            TwoToneDuration("${seconds}s", "")
+        }
+    }
+}
+
+// ============================================================================
+// MAIN DASHBOARD SCREEN (Zero Nested Scaffold, Zero Top/Bottom Dead Space)
+// ============================================================================
 
 @Composable
 fun DashboardScreen(
@@ -180,10 +241,13 @@ fun DashboardScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    // 0: Overview, 1: Analytics, 2: Chats
-    var selectedTab by remember { mutableIntStateOf(0) }
+    // Top pill categories: 0: Overview, 1: Activity, 2: Chats, 3: + Sample
+    var selectedCategoryIndex by remember { mutableIntStateOf(0) }
     var isSearchOpen by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+
+    // Chart mode: 0: 7d Trend, 1: Top Chats, 2: Sessions, 3: Stats
+    var selectedChartMode by remember { mutableIntStateOf(0) }
 
     val filteredChats = remember(uiState.chatSummaries, searchQuery) {
         if (searchQuery.isBlank()) {
@@ -196,328 +260,316 @@ fun DashboardScreen(
         }
     }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = ColorObsidianBg
-    ) { innerPadding ->
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
+    val topChats = remember(uiState.chatSummaries) {
+        uiState.chatSummaries.filter { !it.isExcluded && it.durationMs > 0L }.take(5)
+    }
+
+    // Handle loading state
+    if (uiState.isLoading) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(BgObsidian),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = AcidLime, strokeWidth = 3.dp)
+        }
+        return
+    }
+
+    // Main scrollable content flush against navigation padding (NO nested Scaffold!)
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize()
+            .background(BgObsidian),
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 6.dp, bottom = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // 1. Compact Top Header Row
+        item(key = "top_header") {
+            DashboardTopHeader(
+                isCoreTrackingReady = permissionStatus.isCoreTrackingReady,
+                isTracking = uiState.activeSession.isTracking,
+                isSearchOpen = isSearchOpen,
+                onToggleSearch = { isSearchOpen = !isSearchOpen },
+                onOpenSettings = onNavigateToSettings,
+                onOpenOnboarding = onNavigateToOnboarding
+            )
+        }
+
+        // 1.1 Inline Search Bar (Animated visibility)
+        item(key = "inline_search") {
+            AnimatedVisibility(
+                visible = isSearchOpen,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
             ) {
-                CircularProgressIndicator(color = ColorButterGold)
+                InlineSearchBar(
+                    query = searchQuery,
+                    onQueryChange = { searchQuery = it },
+                    onClose = {
+                        searchQuery = ""
+                        isSearchOpen = false
+                    }
+                )
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // 1. Top Header Row
-                item(key = "top_header") {
-                    DashboardTopHeader(
-                        isCoreTrackingReady = permissionStatus.isCoreTrackingReady,
-                        isTracking = uiState.activeSession.isTracking,
-                        onOpenSettings = onNavigateToSettings,
-                        onOpenOnboarding = onNavigateToOnboarding
+        }
+
+        // 2. Top Category Pill Strip (Overview, Activity, Chats, + Sample)
+        item(key = "category_pill_strip") {
+            TopCategoryPillStrip(
+                selectedIndex = selectedCategoryIndex,
+                onSelectCategory = { index ->
+                    if (index == 3) {
+                        onSeedDemoData()
+                    } else {
+                        selectedCategoryIndex = index
+                    }
+                }
+            )
+        }
+
+        // 3. Live Active WhatsApp Session Banner (when tracking)
+        if (uiState.activeSession.isTracking) {
+            item(key = "live_session_banner") {
+                LiveActiveWhatsAppBanner(
+                    activeSession = uiState.activeSession,
+                    onClick = {
+                        uiState.activeSession.currentChatName?.let { onNavigateToChatDetail(it) }
+                    }
+                )
+            }
+        }
+
+        // 4. Hero Screen Time Header + Two-Tone Typography + Pie Toggle Button
+        if (selectedCategoryIndex == 0 || selectedCategoryIndex == 1 || selectedCategoryIndex == 2) {
+            item(key = "hero_time_header") {
+                HeroScreenTimeHeader(
+                    todayTotalMs = uiState.todayTotalMs,
+                    comparisonText = uiState.comparisonText,
+                    isPieMode = selectedChartMode == 1,
+                    onToggleChartMode = {
+                        selectedChartMode = if (selectedChartMode == 1) 0 else 1
+                    }
+                )
+            }
+        }
+
+        // 5. Interactive Hero Chart Section (Bar Chart Mode or Top Chats Mode + Segmented Switcher)
+        if (selectedCategoryIndex == 0 || selectedCategoryIndex == 1) {
+            item(key = "hero_chart_section") {
+                InteractiveHeroChartSection(
+                    points = uiState.sevenDayUsage,
+                    todayTotalMs = uiState.todayTotalMs,
+                    topChats = topChats,
+                    selectedChartMode = selectedChartMode,
+                    onChartModeChange = { selectedChartMode = it },
+                    onChatClick = onNavigateToChatDetail
+                )
+            }
+        }
+
+        // 6. Quick Summary Strip (Active Chats, Sessions, Peak Chat)
+        if (selectedCategoryIndex == 0 || selectedCategoryIndex == 1) {
+            item(key = "quick_summary_strip") {
+                val topChat = topChats.firstOrNull()
+                QuickSummaryStrip(
+                    activeChatsCount = uiState.chatSummaries.count { !it.isExcluded && it.durationMs > 0L },
+                    totalSessionsCount = uiState.chatSummaries.sumOf { it.sessionCount },
+                    topChatDisplayName = topChat?.displayName ?: "None",
+                    onTopChatClick = {
+                        topChat?.let { onNavigateToChatDetail(it.chatName) }
+                    }
+                )
+            }
+        }
+
+        // 7. Ranked Conversation List Header & Items
+        if (selectedCategoryIndex == 0 || selectedCategoryIndex == 2) {
+            item(key = "ranked_conversations_header") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Top Conversations",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextWhite
                     )
-                }
-
-                // 2. Action Bar Row (Search toggle, indicators, Butter-Gold action)
-                item(key = "action_bar") {
-                    DashboardActionBar(
-                        isSearchOpen = isSearchOpen,
-                        onToggleSearch = { isSearchOpen = !isSearchOpen },
-                        onPrimaryAction = onSeedDemoData
+                    Text(
+                        text = "${filteredChats.size} today",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = TextSubtleLabel
                     )
-                }
-
-                // 2.1 Inline Search Bar (Animated)
-                item(key = "inline_search_bar") {
-                    AnimatedVisibility(
-                        visible = isSearchOpen,
-                        enter = fadeIn() + expandVertically(),
-                        exit = fadeOut() + shrinkVertically()
-                    ) {
-                        InlineSearchBar(
-                            query = searchQuery,
-                            onQueryChange = { searchQuery = it },
-                            onClose = {
-                                searchQuery = ""
-                                isSearchOpen = false
-                            }
-                        )
-                    }
-                }
-
-                // 3. Numbered Tab Strip (01 Overview, 02 Analytics, 03 Chats)
-                item(key = "numbered_tab_strip") {
-                    NumberedTabStrip(
-                        selectedTab = selectedTab,
-                        onTabSelected = { selectedTab = it }
-                    )
-                }
-
-                // 4. Live Tracking Banner (when active)
-                if (uiState.activeSession.isTracking) {
-                    item(key = "live_tracking_banner") {
-                        LiveTrackingCharcoalCard(
-                            activeSession = uiState.activeSession,
-                            onClick = {
-                                uiState.activeSession.currentChatName?.let { onNavigateToChatDetail(it) }
-                            }
-                        )
-                    }
-                }
-
-                // ==========================================
-                // CONDITIONAL CONTENT BASED ON NUMBERED TAB
-                // ==========================================
-
-                // Overview Tab (0) or Chats Tab (2): Show Hero Arch Gauge
-                if (selectedTab == 0 || selectedTab == 2) {
-                    item(key = "hero_squircle_card") {
-                        HeroSageSquircleCard(
-                            uiState = uiState,
-                            onChatClick = { onNavigateToChatDetail(it) }
-                        )
-                    }
-                }
-
-                // Overview Tab (0) or Analytics Tab (1): Show Twin Bento Cards
-                if (selectedTab == 0 || selectedTab == 1) {
-                    item(key = "twin_bento_cards") {
-                        TwinDarkBentoCards(
-                            uiState = uiState,
-                            onTopChatClick = { chatName -> onNavigateToChatDetail(chatName) }
-                        )
-                    }
-                }
-
-                // Overview Tab (0) or Analytics Tab (1): Show Warm Sand 7-Day Bezier Trend Card
-                if (selectedTab == 0 || selectedTab == 1) {
-                    item(key = "warm_sand_bezier_trend") {
-                        WarmSandBezierTrendCard(
-                            points = uiState.sevenDayUsage
-                        )
-                    }
-                }
-
-                // Overview Tab (0) or Analytics Tab (1): Show Soft Olive Capsule Bar Card
-                if (selectedTab == 0 || selectedTab == 1) {
-                    item(key = "soft_olive_capsule_bar") {
-                        SoftOliveCapsuleBarCard(
-                            points = uiState.sevenDayUsage
-                        )
-                    }
-                }
-
-                // Overview Tab (0) or Chats Tab (2): Show Soft Sage Summary Card (Ranked Conversations)
-                if (selectedTab == 0 || selectedTab == 2) {
-                    item(key = "soft_sage_summary_card") {
-                        SoftSageSummaryCard(
-                            chatSummaries = filteredChats,
-                            onChatClick = onNavigateToChatDetail,
-                            onSeedDemoData = onSeedDemoData
-                        )
-                    }
-                }
-
-                // Bottom spacer for comfortable navigation clearance
-                item(key = "bottom_spacer") {
-                    Spacer(modifier = Modifier.height(28.dp))
                 }
             }
+
+            if (filteredChats.isEmpty()) {
+                item(key = "empty_conversations") {
+                    EmptyConversationsCard(onSeedDemoData = onSeedDemoData)
+                }
+            } else {
+                itemsIndexed(
+                    items = filteredChats,
+                    key = { _, chat -> "chat_${chat.chatName}" }
+                ) { index, chat ->
+                    ConversationRowItem(
+                        chat = chat,
+                        index = index,
+                        onClick = { onNavigateToChatDetail(chat.chatName) }
+                    )
+                }
+            }
+        }
+
+        // Bottom spacer kept minimal (at most 4.dp) to eliminate bottom dead space
+        item(key = "bottom_spacer") {
+            Spacer(modifier = Modifier.height(4.dp))
         }
     }
 }
 
-// ==========================================
-// 1. TOP HEADER ROW
-// ==========================================
+// ============================================================================
+// 1. TOP HEADER COMPONENT (Flush at top, search + title + status + settings)
+// ============================================================================
+
 @Composable
 private fun DashboardTopHeader(
     isCoreTrackingReady: Boolean,
     isTracking: Boolean,
+    isSearchOpen: Boolean,
+    onToggleSearch: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenOnboarding: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 4.dp, bottom = 4.dp),
+            .padding(top = 2.dp, bottom = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Left: 4-dot Grid Icon
+        // Left: 40dp Circular dark button with Search icon
         Box(
             modifier = Modifier
-                .size(42.dp)
+                .size(40.dp)
                 .clip(CircleShape)
-                .clickable(onClick = onOpenSettings),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.GridView,
-                contentDescription = "Settings Menu",
-                modifier = Modifier.size(24.dp),
-                tint = ColorGoldMuted
-            )
-        }
-
-        // Center: "Dashboard"
-        Text(
-            text = "Dashboard",
-            style = MaterialTheme.typography.titleLarge,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = ColorTextWhite
-        )
-
-        // Right: Live Status Pill
-        if (isCoreTrackingReady) {
-            Surface(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .clickable(onClick = onOpenSettings),
-                color = Color(0xFF16231A),
-                shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF23442C))
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    StatusIndicatorDot(
-                        isPulsing = isTracking,
-                        color = ColorBadgeGreen,
-                        size = 8.dp
-                    )
-                    Text(
-                        text = if (isTracking) "Tracking" else "Active",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = ColorBadgeGreen
-                    )
-                }
-            }
-        } else {
-            Surface(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .clickable(onClick = onOpenOnboarding),
-                color = Color(0xFF2B1A14),
-                shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF5A2A1A))
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = null,
-                        modifier = Modifier.size(13.dp),
-                        tint = Color(0xFFFFB978)
-                    )
-                    Text(
-                        text = "Setup Needed",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFFB978)
-                    )
-                }
-            }
-        }
-    }
-}
-
-// ==========================================
-// 2. ACTION BAR ROW
-// ==========================================
-@Composable
-private fun DashboardActionBar(
-    isSearchOpen: Boolean,
-    onToggleSearch: () -> Unit,
-    onPrimaryAction: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Left: 46dp Dark Circular Button with Search
-        Box(
-            modifier = Modifier
-                .size(46.dp)
-                .clip(CircleShape)
-                .background(ColorDarkCharcoalButton)
+                .background(CircleButtonBg)
                 .clickable(onClick = onToggleSearch),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.Search,
-                contentDescription = "Search Chats",
-                modifier = Modifier.size(20.dp),
-                tint = if (isSearchOpen) ColorButterGold else ColorGoldMuted
+                contentDescription = "Search chats",
+                modifier = Modifier.size(19.dp),
+                tint = if (isSearchOpen) AcidLime else TextWhite
             )
         }
 
-        // Middle: Subtle Quick Actions
+        // Center: "WhatSpent" Title
+        Text(
+            text = "WhatSpent",
+            style = MaterialTheme.typography.titleLarge,
+            fontSize = 19.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = TextWhite
+        )
+
+        // Right: Status indicator pill + 40dp Settings button with Tune icon
         Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.MoreHoriz,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = ColorTextMuted
-            )
-            Icon(
-                imageVector = Icons.Default.CalendarToday,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = ColorTextMuted
-            )
-            Icon(
-                imageVector = Icons.Default.FolderOpen,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = ColorTextMuted
-            )
-        }
+            if (isCoreTrackingReady) {
+                Surface(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable(onClick = onOpenSettings),
+                    color = Color(0xFF131A14),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, Color(0xFF233A26))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
+                        PulsingDot(
+                            isPulsing = isTracking,
+                            color = AcidLime,
+                            size = 7.dp
+                        )
+                        Text(
+                            text = if (isTracking) "Tracking" else "Active",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = AcidLime
+                        )
+                    }
+                }
+            } else {
+                Surface(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable(onClick = onOpenOnboarding),
+                    color = Color(0xFF2B1813),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, Color(0xFF4C2719))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp),
+                            tint = Color(0xFFFF922B)
+                        )
+                        Text(
+                            text = "Setup",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFFF922B)
+                        )
+                    }
+                }
+            }
 
-        // Right: 46dp Butter-Gold Circular Button with +
-        Box(
-            modifier = Modifier
-                .size(46.dp)
+            // Rightmost: 40dp circular button with Tune (sliders) icon matching reference image
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
                 .clip(CircleShape)
-                .background(ColorButterGold)
-                .clickable(onClick = onPrimaryAction),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Seed Sample Analytics",
-                modifier = Modifier.size(22.dp),
-                tint = ColorButterGoldDark
-            )
+                .background(CircleButtonBg)
+                .clickable(onClick = onOpenSettings),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Tune,
+                    contentDescription = "Settings",
+                    modifier = Modifier.size(19.dp),
+                    tint = TextWhite
+                )
+            }
         }
     }
 }
 
-// ==========================================
-// 2.1 INLINE SEARCH BAR
-// ==========================================
+// ============================================================================
+// 1.1 INLINE SEARCH BAR
+// ============================================================================
+
 @Composable
 private fun InlineSearchBar(
     query: String,
@@ -527,10 +579,10 @@ private fun InlineSearchBar(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp),
-        shape = RoundedCornerShape(16.dp),
-        color = ColorDarkCharcoalCard,
-        border = androidx.compose.foundation.BorderStroke(1.dp, ColorDarkBorder)
+            .height(46.dp),
+        shape = RoundedCornerShape(14.dp),
+        color = SurfaceCharcoal,
+        border = BorderStroke(1.dp, BorderSubtle)
     ) {
         Row(
             modifier = Modifier
@@ -543,14 +595,14 @@ private fun InlineSearchBar(
                 imageVector = Icons.Default.Search,
                 contentDescription = null,
                 modifier = Modifier.size(18.dp),
-                tint = ColorGoldMuted
+                tint = TextSubtleLabel
             )
             Box(modifier = Modifier.weight(1f)) {
                 if (query.isEmpty()) {
                     Text(
                         text = "Search conversations...",
                         style = TextStyle(
-                            color = ColorTextMuted,
+                            color = TextSubtleLabel,
                             fontSize = 14.sp
                         )
                     )
@@ -560,11 +612,11 @@ private fun InlineSearchBar(
                     onValueChange = onQueryChange,
                     singleLine = true,
                     textStyle = TextStyle(
-                        color = ColorTextWhite,
+                        color = TextWhite,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
                     ),
-                    cursorBrush = SolidColor(ColorButterGold),
+                    cursorBrush = SolidColor(AcidLime),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -576,100 +628,93 @@ private fun InlineSearchBar(
                         .size(18.dp)
                         .clip(CircleShape)
                         .clickable { onQueryChange("") },
-                    tint = ColorTextMuted
+                    tint = TextSubtleLabel
                 )
             }
         }
     }
 }
 
-// ==========================================
-// 3. NUMBERED TAB STRIP (01, 02, 03)
-// ==========================================
-private data class DashboardTabItem(
-    val number: String,
-    val title: String
-)
+// ============================================================================
+// 2. TOP CATEGORY PILL STRIP (Overview, Activity, Chats, + Sample)
+// ============================================================================
 
 @Composable
-private fun NumberedTabStrip(
-    selectedTab: Int,
-    onTabSelected: (Int) -> Unit
+private fun TopCategoryPillStrip(
+    selectedIndex: Int,
+    onSelectCategory: (Int) -> Unit
 ) {
-    val tabs = remember {
-        listOf(
-            DashboardTabItem("01", "Overview"),
-            DashboardTabItem("02", "Analytics"),
-            DashboardTabItem("03", "Chats")
-        )
+    val categories = remember {
+        listOf("Overview", "Activity", "Chats", "+ Sample")
     }
 
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        itemsIndexed(tabs) { index, tab ->
-            val isSelected = selectedTab == index
-            val borderColor by animateColorAsState(
-                targetValue = if (isSelected) ColorButterGold else Color(0xFF3A3A3E),
-                label = "tabBorderColor"
-            )
-            val textColor by animateColorAsState(
-                targetValue = if (isSelected) ColorTextWhite else ColorTextMuted,
-                label = "tabTextColor"
-            )
-            val numberColor by animateColorAsState(
-                targetValue = if (isSelected) ColorButterGold else ColorTextMuted,
-                label = "tabNumberColor"
+        itemsIndexed(categories) { index, category ->
+            val isSelected = selectedIndex == index
+            val isActionPill = index == 3
+
+            val pillBg by animateColorAsState(
+                targetValue = when {
+                    isSelected -> AcidLime
+                    isActionPill -> CircleButtonBg
+                    else -> SurfaceCharcoal
+                },
+                label = "pillBg_$index"
             )
 
-            Row(
+            val textColor by animateColorAsState(
+                targetValue = when {
+                    isSelected -> AcidLimeInk
+                    isActionPill -> AcidLime
+                    else -> TextSubtleLabel
+                },
+                label = "pillTextColor_$index"
+            )
+
+            Surface(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { onTabSelected(index) }
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .clip(RoundedCornerShape(50))
+                    .clickable { onSelectCategory(index) },
+                shape = RoundedCornerShape(50),
+                color = pillBg,
+                border = if (!isSelected) BorderStroke(1.dp, BorderSubtle) else null
             ) {
-                // Circular numbered badge
-                Box(
-                    modifier = Modifier
-                        .size(26.dp)
-                        .clip(CircleShape)
-                        .border(1.dp, borderColor, CircleShape),
-                    contentAlignment = Alignment.Center
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
+                    if (isActionPill) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = AcidLime
+                        )
+                    }
                     Text(
-                        text = tab.number,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontSize = 11.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = numberColor
+                        text = if (isActionPill) "Sample" else category,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontSize = 13.sp,
+                        fontWeight = if (isSelected || isActionPill) FontWeight.SemiBold else FontWeight.Medium,
+                        color = textColor
                     )
                 }
-
-                // Tab label
-                Text(
-                    text = tab.title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontSize = 14.sp,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = textColor
-                )
             }
         }
     }
 }
 
-// ==========================================
-// 4. LIVE TRACKING BANNER
-// ==========================================
+// ============================================================================
+// 3. LIVE ACTIVE WHATSAPP SESSION BANNER
+// ============================================================================
+
 @Composable
-private fun LiveTrackingCharcoalCard(
+private fun LiveActiveWhatsAppBanner(
     activeSession: ActiveSessionState,
     onClick: () -> Unit
 ) {
@@ -679,13 +724,13 @@ private fun LiveTrackingCharcoalCard(
             .clip(RoundedCornerShape(20.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
-        color = ColorDarkCharcoalCard,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF2E4D3C))
+        color = SurfaceCharcoal,
+        border = BorderStroke(1.dp, Color(0xFF353820))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
+                .padding(horizontal = 18.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -694,26 +739,27 @@ private fun LiveTrackingCharcoalCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.weight(1f)
             ) {
-                StatusIndicatorDot(
+                PulsingDot(
                     isPulsing = true,
-                    color = ColorBadgeGreen,
-                    size = 12.dp
+                    color = AcidLime,
+                    size = 10.dp
                 )
                 Column {
                     Text(
                         text = "NOW ACTIVE IN WHATSAPP",
                         style = MaterialTheme.typography.labelSmall,
-                        fontSize = 11.sp,
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = ColorBadgeGreen,
-                        letterSpacing = 0.5.sp
+                        color = AcidLime,
+                        letterSpacing = 0.6.sp
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = activeSession.currentDisplayName ?: "Conversation",
                         style = MaterialTheme.typography.titleMedium,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = ColorTextWhite,
+                        color = TextWhite,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -724,148 +770,656 @@ private fun LiveTrackingCharcoalCard(
                 Text(
                     text = formatDurationWithSeconds(activeSession.currentSessionDurationMs),
                     style = MaterialTheme.typography.titleLarge,
-                    fontSize = 20.sp,
+                    fontSize = 19.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = ColorBadgeGreen
+                    color = AcidLime
                 )
                 Text(
                     text = "Today: ${TimeFormatUtils.formatDurationShort(activeSession.currentChatTodayTotalMs)}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = ColorTextMuted
+                    fontSize = 11.sp,
+                    color = TextSubtleLabel
                 )
             }
         }
     }
 }
 
-// ==========================================
-// 6. HERO SQUIRCLE CARD — SAGE-MINT
-// ==========================================
+// ============================================================================
+// 4. HERO SCREEN TIME HEADER + TWO-TONE HERO NUMBER + ACID-LIME PIE BUTTON
+// (Directly modeled on SOL v + 24.446 00 + Pie button in reference image)
+// ============================================================================
+
 @Composable
-private fun HeroSageSquircleCard(
-    uiState: DashboardUiState,
-    onChatClick: (String) -> Unit
+private fun HeroScreenTimeHeader(
+    todayTotalMs: Long,
+    comparisonText: String,
+    isPieMode: Boolean,
+    onToggleChartMode: () -> Unit
 ) {
-    val topChats = remember(uiState.chatSummaries) {
-        uiState.chatSummaries.filter { !it.isExcluded && it.durationMs > 0L }.take(5)
+    val twoTone = remember(todayTotalMs) {
+        splitDurationTwoTone(todayTotalMs)
     }
 
-    var selectedIndex by remember { mutableIntStateOf(0) }
-    // Bounds check whenever topChats changes
-    val safeSelectedIndex = if (topChats.isNotEmpty()) selectedIndex.coerceIn(0, topChats.size - 1) else 0
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        // Selector & Action Row: "Today's Screen Time v" + "+15% vs yesterday" + 40dp Pie button
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Selector pill matching the SOL v dropdown in the reference image
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(SurfaceCharcoal)
+                        .border(1.dp, BorderSubtle, RoundedCornerShape(12.dp))
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(AcidLime)
+                    )
+                    Text(
+                        text = "Today's Screen Time",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextWhite
+                    )
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = TextSubtleLabel
+                    )
+                }
+
+                // Comparison badge (+15% vs yesterday)
+                if (comparisonText.isNotBlank() && comparisonText != "No data yesterday") {
+                    Text(
+                        text = comparisonText,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AcidLime
+                    )
+                }
+            }
+
+            // Right: 40dp Circular Dark Button with Neon Acid-Lime Pie Chart Icon
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(CircleButtonBg)
+                    .border(1.dp, BorderSubtle, CircleShape)
+                    .clickable(onClick = onToggleChartMode),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (isPieMode) Icons.Default.BarChart else Icons.Default.PieChart,
+                    contentDescription = "Toggle Chart Mode",
+                    modifier = Modifier.size(20.dp),
+                    tint = AcidLime
+                )
+            }
+        }
+
+        // Giant Two-Tone Typography Display (matching 24.446 00)
+        Row(
+            verticalAlignment = Alignment.Bottom,
+            modifier = Modifier.padding(top = 2.dp)
+        ) {
+            Text(
+                text = twoTone.primary,
+                style = MaterialTheme.typography.displayMedium,
+                fontSize = 38.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = TextWhite,
+                letterSpacing = (-0.5).sp
+            )
+            Text(
+                text = twoTone.secondary,
+                style = MaterialTheme.typography.displayMedium,
+                fontSize = 38.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = TextMutedGray,
+                letterSpacing = (-0.5).sp
+            )
+        }
+    }
+}
+
+// ============================================================================
+// 5. INTERACTIVE HERO CHART SECTION
+// (Mode A: 7-Day Bar Chart with Floating Tooltip & Glowing Periwinkle Bar)
+// (Mode B: Top Chats Distribution Gauge)
+// (Bottom: 1d 1w 1m [6m] 1y Segmented Pill Switcher)
+// ============================================================================
+
+@Composable
+private fun InteractiveHeroChartSection(
+    points: List<DailyUsagePoint>,
+    todayTotalMs: Long,
+    topChats: List<ChatSummary>,
+    selectedChartMode: Int,
+    onChartModeChange: (Int) -> Unit,
+    onChatClick: (String) -> Unit
+) {
+    val displayPoints = remember(points) {
+        if (points.isNotEmpty()) {
+            points.takeLast(7)
+        } else {
+            (0..6).map { i ->
+                DailyUsagePoint(
+                    date = TimeFormatUtils.dateStringDaysAgo(6 - i),
+                    dayLabel = when (i) {
+                        0 -> "Mon"; 1 -> "Tue"; 2 -> "Wed"; 3 -> "Thu"; 4 -> "Fri"; 5 -> "Sat"; else -> "Sun"
+                    },
+                    totalDurationMs = 0L
+                )
+            }
+        }
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        when (selectedChartMode) {
+            0 -> {
+                // Mode A: Interactive 7-Day Activity Bar Chart
+                ActivityBarChart7Day(
+                    points = displayPoints,
+                    todayTotalMs = todayTotalMs
+                )
+            }
+            1 -> {
+                // Mode B: Top Chats Distribution Chart
+                TopChatsDistributionChart(
+                    topChats = topChats,
+                    onChatClick = onChatClick
+                )
+            }
+            2 -> {
+                // Mode C: Sessions Breakdown
+                SessionsBreakdownCard(
+                    topChats = topChats,
+                    onTopChatClick = onChatClick
+                )
+            }
+            else -> {
+                // Mode D: Stats Overview
+                QuickStatsOverviewCard(
+                    todayTotalMs = todayTotalMs,
+                    points = displayPoints
+                )
+            }
+        }
+
+        // Segmented Pill Switcher below chart (matching 1d 1w 1m [6m] 1y in reference image)
+        SegmentedChartSwitcher(
+            selectedMode = selectedChartMode,
+            onModeSelected = onChartModeChange
+        )
+    }
+}
+
+/**
+ * 7-Day Activity Bar Chart:
+ * 3 dashed horizontal reference lines with right-aligned duration labels.
+ * 7 vertical thick rounded bars (inactive matte charcoal, active periwinkle violet with top glow).
+ * Floating dark tooltip pill over selected bar in two-tone typography.
+ */
+@Composable
+private fun ActivityBarChart7Day(
+    points: List<DailyUsagePoint>,
+    todayTotalMs: Long
+) {
+    // Default selection to the last day (Today) or peak day
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
+    val activeIndex = (selectedIndex ?: (points.size - 1)).coerceIn(0, (points.size - 1).coerceAtLeast(0))
+    val selectedPoint = points.getOrNull(activeIndex)
+
+    val maxDuration = remember(points, todayTotalMs) {
+        val maxVal = points.maxOfOrNull { it.totalDurationMs } ?: todayTotalMs
+        if (maxVal <= 0L) 3600_000L else maxVal
+    }
+
+    val maxLabel = remember(maxDuration) { formatChartAxisLabel(maxDuration) }
+    val midLabel = remember(maxDuration) { formatChartAxisLabel(maxDuration / 2) }
+
+    val selectedTwoTone = remember(selectedPoint) {
+        splitDurationTwoTone(selectedPoint?.totalDurationMs ?: 0L)
+    }
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(210.dp)
+    ) {
+        val density = LocalDensity.current
+        val totalWidthPx = constraints.maxWidth.toFloat()
+        val totalHeightPx = constraints.maxHeight.toFloat()
+
+        val rightAxisWidth = 34.dp
+        val rightAxisWidthPx = with(density) { rightAxisWidth.toPx() }
+        val chartAreaWidthPx = totalWidthPx - rightAxisWidthPx
+        val slotWidthPx = chartAreaWidthPx / points.size.coerceAtLeast(1)
+
+        val tooltipWidth = 118.dp
+        val tooltipWidthPx = with(density) { tooltipWidth.toPx() }
+
+        // Compute active bar center and tooltip X position
+        val activeBarCenterX = (activeIndex + 0.5f) * slotWidthPx
+        val targetTooltipXPx = (activeBarCenterX - tooltipWidthPx / 2f).coerceIn(4f, totalWidthPx - tooltipWidthPx - 4f)
+        val targetTooltipXDp = with(density) { targetTooltipXPx.toDp() }
+
+        val animatedTooltipX by animateDpAsState(
+            targetValue = targetTooltipXDp,
+            animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+            label = "tooltipSlideX"
+        )
+
+        // 1. Right Axis Labels (Max, Mid, 0m)
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .width(rightAxisWidth)
+                .padding(top = 28.dp, bottom = 26.dp)
+                .fillMaxHeight(),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.End
+        ) {
+            Text(
+                text = maxLabel,
+                style = MaterialTheme.typography.labelSmall,
+                fontSize = 11.sp,
+                color = TextSubtleLabel,
+                textAlign = TextAlign.End
+            )
+            Text(
+                text = midLabel,
+                style = MaterialTheme.typography.labelSmall,
+                fontSize = 11.sp,
+                color = TextSubtleLabel,
+                textAlign = TextAlign.End
+            )
+            Text(
+                text = "0m",
+                style = MaterialTheme.typography.labelSmall,
+                fontSize = 11.sp,
+                color = TextSubtleLabel,
+                textAlign = TextAlign.End
+            )
+        }
+
+        // 2. Interactive Canvas: Dashed Gridlines, Glowing Bars & Inactive Bars
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(points) {
+                    detectTapGestures { tapOffset ->
+                        val tapped = (tapOffset.x / slotWidthPx).toInt()
+                        if (tapped in points.indices) {
+                            selectedIndex = tapped
+                        }
+                    }
+                }
+        ) {
+            val usableHeight = size.height - 66.dp.toPx()
+            val chartTopY = 36.dp.toPx()
+            val baselineY = chartTopY + usableHeight
+            val midY = chartTopY + (usableHeight / 2f)
+
+            // Draw 3 horizontal dashed reference lines
+            val dashEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 8f), 0f)
+            val gridColor = BorderSubtle
+
+            // Top dashed line
+            drawLine(
+                color = gridColor,
+                start = Offset(0f, chartTopY),
+                end = Offset(chartAreaWidthPx, chartTopY),
+                strokeWidth = 1.dp.toPx(),
+                pathEffect = dashEffect
+            )
+
+            // Middle dashed line
+            drawLine(
+                color = gridColor,
+                start = Offset(0f, midY),
+                end = Offset(chartAreaWidthPx, midY),
+                strokeWidth = 1.dp.toPx(),
+                pathEffect = dashEffect
+            )
+
+            // Bottom baseline dashed line
+            drawLine(
+                color = gridColor,
+                start = Offset(0f, baselineY),
+                end = Offset(chartAreaWidthPx, baselineY),
+                strokeWidth = 1.dp.toPx(),
+                pathEffect = dashEffect
+            )
+
+            // Draw 7 thick vertical rounded bars
+            val barWidthPx = (slotWidthPx * 0.52f).coerceIn(20.dp.toPx(), 30.dp.toPx())
+
+            points.forEachIndexed { i, point ->
+                val centerX = (i * slotWidthPx) + (slotWidthPx / 2f)
+                val left = centerX - (barWidthPx / 2f)
+                val ratio = (point.totalDurationMs.toFloat() / maxDuration.toFloat()).coerceIn(0.06f, 1f)
+                val barH = usableHeight * ratio
+                val top = baselineY - barH
+                val isSelected = i == activeIndex
+
+                if (isSelected) {
+                    // Subtle glowing beam rising from top of periwinkle bar to tooltip
+                    val beamTop = 32.dp.toPx()
+                    if (top > beamTop) {
+                        drawRoundRect(
+                            brush = Brush.verticalGradient(
+                                listOf(
+                                    Color.Transparent,
+                                    PeriwinkleViolet.copy(alpha = 0.22f)
+                                )
+                            ),
+                            topLeft = Offset(left - 2.dp.toPx(), beamTop),
+                            size = Size(barWidthPx + 4.dp.toPx(), top - beamTop),
+                            cornerRadius = CornerRadius(14.dp.toPx(), 14.dp.toPx())
+                        )
+                    }
+
+                    // Selected Bar: Vibrant Periwinkle Violet with vertical gradient highlight
+                    drawRoundRect(
+                        brush = Brush.verticalGradient(
+                            listOf(
+                                PeriwinkleLight,
+                                PeriwinkleViolet
+                            )
+                        ),
+                        topLeft = Offset(left, top),
+                        size = Size(barWidthPx, barH),
+                        cornerRadius = CornerRadius(14.dp.toPx(), 14.dp.toPx())
+                    )
+                } else {
+                    // Inactive Bar: Deep matte charcoal
+                    drawRoundRect(
+                        color = BarInactiveCharcoal,
+                        topLeft = Offset(left, top),
+                        size = Size(barWidthPx, barH),
+                        cornerRadius = CornerRadius(14.dp.toPx(), 14.dp.toPx())
+                    )
+                }
+            }
+        }
+
+        // 3. Floating Dark Tooltip Pill (matching 27.354 00 SOL pill in reference image)
+        if (selectedPoint != null) {
+            Surface(
+                modifier = Modifier
+                    .offset(x = animatedTooltipX, y = 2.dp)
+                    .width(tooltipWidth),
+                shape = RoundedCornerShape(14.dp),
+                color = TooltipDarkSurface,
+                border = BorderStroke(1.dp, TooltipBorder)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "${selectedPoint.dayLabel} • ",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextSubtleLabel
+                    )
+                    Text(
+                        text = selectedTwoTone.primary,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextWhite
+                    )
+                    Text(
+                        text = selectedTwoTone.secondary,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = TextMutedGray
+                    )
+                }
+            }
+        }
+
+        // 4. Day Labels Below Bars (Mon, Tue, Wed...)
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .width(with(density) { chartAreaWidthPx.toDp() }),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            points.forEachIndexed { i, point ->
+                val isSelected = i == activeIndex
+                Text(
+                    text = point.dayLabel,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 12.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    color = if (isSelected) TextWhite else TextSubtleLabel,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.clickable { selectedIndex = i }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Mode B: Top Chats Distribution Chart (180° Arch Gauge with Curated Palette)
+ */
+@Composable
+private fun TopChatsDistributionChart(
+    topChats: List<ChatSummary>,
+    onChatClick: (String) -> Unit
+) {
+    val totalMs = remember(topChats) {
+        topChats.sumOf { it.durationMs }.coerceAtLeast(1L)
+    }
+
+    var selectedChatIndex by remember { mutableIntStateOf(0) }
+    val safeSelectedIndex = if (topChats.isNotEmpty()) selectedChatIndex.coerceIn(0, topChats.size - 1) else 0
     val activeChat = topChats.getOrNull(safeSelectedIndex)
+
+    val activeChatTwoTone = remember(activeChat) {
+        splitDurationTwoTone(activeChat?.durationMs ?: 0L)
+    }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        color = ColorHeroSage
+        shape = RoundedCornerShape(26.dp),
+        color = SurfaceCharcoal,
+        border = BorderStroke(1.dp, BorderSubtle)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(22.dp)
+                .padding(20.dp)
         ) {
-            // Header Row: "Top 5 chats by spend" + Circular ↗ button
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Top 5 chats by spend",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF121413)
-                )
+                Column {
+                    Text(
+                        text = "Distribution by Chat",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextWhite
+                    )
+                    Text(
+                        text = "Today's top conversations",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontSize = 12.sp,
+                        color = TextSubtleLabel
+                    )
+                }
 
                 Box(
                     modifier = Modifier
                         .size(36.dp)
                         .clip(CircleShape)
-                        .border(1.dp, ColorHeroSageBorder, CircleShape)
-                        .clickable {
-                            activeChat?.let { onChatClick(it.chatName) }
-                        },
+                        .background(CircleButtonBg)
+                        .clickable { activeChat?.let { onChatClick(it.chatName) } },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.NorthEast,
-                        contentDescription = "Inspect Chat",
-                        modifier = Modifier.size(18.dp),
-                        tint = Color(0xFF121413)
+                        contentDescription = "Chat Detail",
+                        modifier = Modifier.size(16.dp),
+                        tint = TextWhite
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(2.dp))
-
-            // Subtitle: "Total time today"
-            Text(
-                text = "Total time today",
-                style = MaterialTheme.typography.bodySmall,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                color = ColorHeroSageSubtext
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Giant Hero Time Display (e.g. "2h 45m" or "2,985")
-            Text(
-                text = TimeFormatUtils.formatDurationShort(uiState.todayTotalMs),
-                style = MaterialTheme.typography.displayMedium,
-                fontSize = 38.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFF111312)
-            )
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            // 180° Semi-Circular Arch Gauge
-            SemiCircularArchGauge(
-                topChats = topChats,
-                selectedIndex = safeSelectedIndex,
-                onSegmentClick = { index -> selectedIndex = index }
-            )
-
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Nested Floating Mint Callout Pill
+            // 180° Semi-Circular Arch Canvas
             Box(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Surface(
-                    shape = RoundedCornerShape(22.dp),
-                    color = ColorHeroPillBg,
+                Canvas(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(22.dp))
-                        .clickable {
-                            activeChat?.let { onChatClick(it.chatName) }
+                        .fillMaxSize()
+                        .pointerInput(topChats, totalMs) {
+                            detectTapGestures { tapOffset ->
+                                val center = Offset(size.width / 2f, size.height - 10.dp.toPx())
+                                val dx = tapOffset.x - center.x
+                                val dy = tapOffset.y - center.y
+                                val dist = sqrt(dx * dx + dy * dy)
+                                val strokePx = 24.dp.toPx()
+                                val outerRadius = (size.width / 2f) - (strokePx / 2f)
+                                val innerRadius = outerRadius - strokePx
+
+                                if (dist in (innerRadius * 0.7f)..(outerRadius * 1.3f) && dy <= 0f) {
+                                    val angle = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
+                                    val normalizedAngle = angle + 180f
+                                    var currentStart = 0f
+                                    val gap = if (topChats.size > 1) 2.5f else 0f
+                                    val totalUsable = 180f - (gap * (topChats.size - 1))
+
+                                    topChats.forEachIndexed { i, chat ->
+                                        val ratio = chat.durationMs.toFloat() / totalMs.toFloat()
+                                        val sweep = ratio * totalUsable
+                                        if (normalizedAngle in currentStart..(currentStart + sweep + gap)) {
+                                            selectedChatIndex = i
+                                            return@detectTapGestures
+                                        }
+                                        currentStart += sweep + gap
+                                    }
+                                }
+                            }
                         }
                 ) {
+                    val strokeWidthPx = 24.dp.toPx()
+                    val center = Offset(size.width / 2f, size.height - 10.dp.toPx())
+                    val radius = (size.width / 2f) - (strokeWidthPx / 2f) - 6.dp.toPx()
+                    val arcTopLeft = Offset(center.x - radius, center.y - radius)
+                    val arcSize = Size(radius * 2f, radius * 2f)
+
+                    if (topChats.isEmpty()) {
+                        drawArc(
+                            color = BarInactiveCharcoal,
+                            startAngle = 180f,
+                            sweepAngle = 180f,
+                            useCenter = false,
+                            topLeft = arcTopLeft,
+                            size = arcSize,
+                            style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
+                        )
+                    } else {
+                        val gap = if (topChats.size > 1) 2.5f else 0f
+                        val totalUsableSweep = 180f - (gap * (topChats.size - 1))
+                        var currentAngle = 180f
+
+                        topChats.forEachIndexed { index, chat ->
+                            val color = ChatAccentPalette.getOrElse(index) { PeriwinkleViolet }
+                            val ratio = (chat.durationMs.toFloat() / totalMs.toFloat()).coerceIn(0.05f, 1f)
+                            val sweep = (ratio * totalUsableSweep).coerceAtLeast(3f)
+                            val isSelected = index == safeSelectedIndex
+                            val stroke = if (isSelected) strokeWidthPx + 5.dp.toPx() else strokeWidthPx
+
+                            drawArc(
+                                color = color,
+                                startAngle = currentAngle,
+                                sweepAngle = sweep,
+                                useCenter = false,
+                                topLeft = arcTopLeft,
+                                size = arcSize,
+                                style = Stroke(width = stroke, cap = StrokeCap.Butt)
+                            )
+                            currentAngle += sweep + gap
+                        }
+                    }
+                }
+
+                // Center Callout Card inside Arch
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = TooltipDarkSurface,
+                    border = BorderStroke(1.dp, TooltipBorder),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 8.dp)
+                        .clickable { activeChat?.let { onChatClick(it.chatName) } }
+                ) {
                     Column(
-                        modifier = Modifier.padding(horizontal = 26.dp, vertical = 10.dp),
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
-                            text = if (activeChat != null) {
-                                TimeFormatUtils.formatDurationShort(activeChat.durationMs)
-                            } else {
-                                "0m"
-                            },
-                            style = MaterialTheme.typography.titleLarge,
-                            fontSize = 19.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF121413)
-                        )
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            Text(
+                                text = activeChatTwoTone.primary,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = TextWhite
+                            )
+                            Text(
+                                text = activeChatTwoTone.secondary,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = TextMutedGray
+                            )
+                        }
                         Text(
                             text = activeChat?.displayName ?: "No chats yet",
                             style = MaterialTheme.typography.labelSmall,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF4A6056),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = TextSubtleLabel,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -873,9 +1427,9 @@ private fun HeroSageSquircleCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // Pager Dots (• • •) for Top Chats
+            // Segment selection indicator dots
             if (topChats.isNotEmpty()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -884,23 +1438,14 @@ private fun HeroSageSquircleCard(
                 ) {
                     topChats.indices.forEach { index ->
                         val isCurrent = index == safeSelectedIndex
-                        val dotScale by animateFloatAsState(
-                            targetValue = if (isCurrent) 1.25f else 1.0f,
-                            label = "pagerDotScale_$index"
-                        )
+                        val dotColor = ChatAccentPalette.getOrElse(index) { PeriwinkleViolet }
                         Box(
                             modifier = Modifier
                                 .padding(horizontal = 4.dp)
                                 .size(if (isCurrent) 14.dp else 6.dp, 6.dp)
-                                .graphicsLayer {
-                                    scaleX = dotScale
-                                    scaleY = dotScale
-                                }
                                 .clip(RoundedCornerShape(3.dp))
-                                .background(
-                                    if (isCurrent) Color(0xFF121413) else Color(0xFF121413).copy(alpha = 0.25f)
-                                )
-                                .clickable { selectedIndex = index }
+                                .background(if (isCurrent) dotColor else BorderSubtle)
+                                .clickable { selectedChatIndex = index }
                         )
                     }
                 }
@@ -910,295 +1455,355 @@ private fun HeroSageSquircleCard(
 }
 
 /**
- * 180° Semi-Circular Arch Gauge with segmented slices and 2.5-degree gaps.
+ * Mode C: Sessions Breakdown Card
  */
 @Composable
-private fun SemiCircularArchGauge(
+private fun SessionsBreakdownCard(
     topChats: List<ChatSummary>,
-    selectedIndex: Int,
-    onSegmentClick: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    onTopChatClick: (String) -> Unit
 ) {
-    val totalMs = remember(topChats) {
-        topChats.sumOf { it.durationMs }.coerceAtLeast(1L)
-    }
+    val totalSessions = remember(topChats) { topChats.sumOf { it.sessionCount } }
+    val topChat = topChats.firstOrNull()
 
-    // Animation progress keyed on top chats
-    val animProgress = remember { Animatable(1f) }
-    val chatsKey = remember(topChats) { topChats.map { it.chatName } }
-    LaunchedEffect(chatsKey) {
-        if (topChats.isNotEmpty()) {
-            animProgress.snapTo(0.2f)
-            animProgress.animateTo(
-                targetValue = 1f,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioNoBouncy,
-                    stiffness = Spring.StiffnessMediumLow
-                )
-            )
-        }
-    }
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(180.dp),
-        contentAlignment = Alignment.Center
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(26.dp),
+        color = SurfaceCharcoal,
+        border = BorderStroke(1.dp, BorderSubtle)
     ) {
-        Canvas(
+        Column(
             modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(topChats, totalMs) {
-                    detectTapGestures { tapOffset ->
-                        val center = Offset(size.width / 2f, size.height - 12.dp.toPx())
-                        val dx = tapOffset.x - center.x
-                        val dy = tapOffset.y - center.y
-                        val dist = sqrt(dx * dx + dy * dy)
-                        val strokePx = 28.dp.toPx()
-                        val outerRadius = (size.width / 2f) - (strokePx / 2f)
-                        val innerRadius = outerRadius - strokePx
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Text(
+                text = "Session Analytics",
+                style = MaterialTheme.typography.titleMedium,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextWhite
+            )
 
-                        // Check if tap falls in the arch ring
-                        if (dist in (innerRadius * 0.7f)..(outerRadius * 1.3f) && dy <= 0f) {
-                            var angle = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
-                            // angle is between -180 and 0. Normalize to 0..180 where -180 is 0
-                            val normalizedAngle = angle + 180f
-
-                            var currentStart = 0f
-                            val gap = if (topChats.size > 1) 2.5f else 0f
-                            val totalUsable = 180f - (gap * (topChats.size - 1))
-
-                            topChats.forEachIndexed { i, chat ->
-                                val ratio = chat.durationMs.toFloat() / totalMs.toFloat()
-                                val sweep = ratio * totalUsable
-                                if (normalizedAngle in currentStart..(currentStart + sweep + gap)) {
-                                    onSegmentClick(i)
-                                    return@detectTapGestures
-                                }
-                                currentStart += sweep + gap
-                            }
-                        }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Total Sessions Tile
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(18.dp),
+                    color = ElevatedCharcoal,
+                    border = BorderStroke(1.dp, BorderSubtle)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text(
+                            text = "TOTAL",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextSubtleLabel
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "$totalSessions",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = AcidLime
+                        )
+                        Text(
+                            text = "sessions today",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 11.sp,
+                            color = TextSubtleLabel
+                        )
                     }
                 }
-        ) {
-            val strokeWidthPx = 28.dp.toPx()
-            val canvasWidth = size.width
-            val canvasHeight = size.height
 
-            // Arch center is at the bottom-center of canvas
-            val center = Offset(canvasWidth / 2f, canvasHeight - 12.dp.toPx())
-            val radius = (canvasWidth / 2f) - (strokeWidthPx / 2f) - 6.dp.toPx()
-            val arcTopLeft = Offset(center.x - radius, center.y - radius)
-            val arcSize = Size(radius * 2f, radius * 2f)
-
-            if (topChats.isEmpty()) {
-                // Placeholder track
-                drawArc(
-                    color = Color(0xFF98B8A8).copy(alpha = 0.45f),
-                    startAngle = 180f,
-                    sweepAngle = 180f,
-                    useCenter = false,
-                    topLeft = arcTopLeft,
-                    size = arcSize,
-                    style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
-                )
-            } else {
-                val progress = animProgress.value
-                val gap = if (topChats.size > 1) 2.5f else 0f
-                val totalUsableSweep = 180f - (gap * (topChats.size - 1))
-
-                var currentAngle = 180f
-                topChats.forEachIndexed { index, chat ->
-                    val color = ArchColors.getOrElse(index) { Color(0xFF63C89A) }
-                    val ratio = (chat.durationMs.toFloat() / totalMs.toFloat()).coerceIn(0.05f, 1f)
-                    val sweep = (ratio * totalUsableSweep * progress).coerceAtLeast(3f)
-                    val isSelected = index == selectedIndex
-                    val currentStroke = if (isSelected) strokeWidthPx + 4.dp.toPx() else strokeWidthPx
-
-                    drawArc(
-                        color = color,
-                        startAngle = currentAngle,
-                        sweepAngle = sweep,
-                        useCenter = false,
-                        topLeft = arcTopLeft,
-                        size = arcSize,
-                        style = Stroke(
-                            width = currentStroke,
-                            cap = StrokeCap.Butt
+                // Peak Conversation Tile
+                Surface(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { topChat?.let { onTopChatClick(it.chatName) } },
+                    shape = RoundedCornerShape(18.dp),
+                    color = ElevatedCharcoal,
+                    border = BorderStroke(1.dp, BorderSubtle)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text(
+                            text = "MOST ACTIVE",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextSubtleLabel
                         )
-                    )
-                    currentAngle += sweep + gap
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = topChat?.displayName ?: "None",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PeriwinkleViolet,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "${topChat?.sessionCount ?: 0} sessions",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 11.sp,
+                            color = TextSubtleLabel
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-// ==========================================
-// 7. TWIN DARK BENTO CARDS
-// ==========================================
+/**
+ * Mode D: Quick Stats Overview Card
+ */
 @Composable
-private fun TwinDarkBentoCards(
-    uiState: DashboardUiState,
-    onTopChatClick: (String) -> Unit
+private fun QuickStatsOverviewCard(
+    todayTotalMs: Long,
+    points: List<DailyUsagePoint>
 ) {
-    val topChat = remember(uiState.chatSummaries) {
-        uiState.chatSummaries.firstOrNull { !it.isExcluded }
+    val weeklyAverageMs = remember(points) {
+        if (points.isNotEmpty()) points.map { it.totalDurationMs }.average().toLong() else 0L
     }
 
-    Row(
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        shape = RoundedCornerShape(26.dp),
+        color = SurfaceCharcoal,
+        border = BorderStroke(1.dp, BorderSubtle)
     ) {
-        // Left Bento Card: Daily Spend
-        Surface(
-            modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(28.dp),
-            color = ColorDarkCharcoalCard
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(18.dp)
+            Text(
+                text = "Screen Time Overview",
+                style = MaterialTheme.typography.titleMedium,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextWhite
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(18.dp),
+                    color = ElevatedCharcoal,
+                    border = BorderStroke(1.dp, BorderSubtle)
                 ) {
-                    Text(
-                        text = "Daily Spend",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = ColorTextWhite
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF2C2C2E)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.NorthEast,
-                            contentDescription = null,
-                            modifier = Modifier.size(15.dp),
-                            tint = ColorGoldMuted
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text(
+                            text = "7-DAY AVERAGE",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextSubtleLabel
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = TimeFormatUtils.formatDurationShort(weeklyAverageMs),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = TextWhite
+                        )
+                        Text(
+                            text = "per day",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 11.sp,
+                            color = TextSubtleLabel
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(2.dp))
-
-                Text(
-                    text = TimeFormatUtils.formatReadableDate(TimeFormatUtils.todayDateString()),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontSize = 12.sp,
-                    color = ColorTextMuted
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Text(
-                    text = TimeFormatUtils.formatDurationShort(uiState.todayTotalMs),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = ColorTextWhite
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Bottom pill badge: +15% vs yesterday
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = ColorBadgeGreen
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(18.dp),
+                    color = ElevatedCharcoal,
+                    border = BorderStroke(1.dp, BorderSubtle)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text(
+                            text = "TODAY'S TOTAL",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextSubtleLabel
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = TimeFormatUtils.formatDurationShort(todayTotalMs),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = AcidLime
+                        )
+                        Text(
+                            text = "recorded time",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 11.sp,
+                            color = TextSubtleLabel
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ============================================================================
+// SEGMENTED PILL SWITCHER BELOW CHART (1d 1w 1m [6m] 1y in reference image)
+// ============================================================================
+
+@Composable
+private fun SegmentedChartSwitcher(
+    selectedMode: Int,
+    onModeSelected: (Int) -> Unit
+) {
+    val modes = remember {
+        listOf("7d Trend", "Top Chats", "Sessions", "Stats")
+    }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(44.dp),
+        shape = RoundedCornerShape(26.dp),
+        color = SurfaceCharcoal,
+        border = BorderStroke(1.dp, BorderSubtle)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(3.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            modes.forEachIndexed { index, title ->
+                val isSelected = selectedMode == index
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(22.dp))
+                        .then(
+                            if (isSelected) {
+                                Modifier.background(AcidLime)
+                            } else {
+                                Modifier.clickable { onModeSelected(index) }
+                            }
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = uiState.comparisonText,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = ColorBadgeGreenDark
+                        text = title,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontSize = 12.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        color = if (isSelected) AcidLimeInk else TextSubtleLabel
                     )
                 }
             }
         }
+    }
+}
 
-        // Right Bento Card: Peak Chat
-        Surface(
+// ============================================================================
+// 6. QUICK SUMMARY STRIP (Active Chats, Total Sessions, Peak Chat)
+// ============================================================================
+
+@Composable
+private fun QuickSummaryStrip(
+    activeChatsCount: Int,
+    totalSessionsCount: Int,
+    topChatDisplayName: String,
+    onTopChatClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = SurfaceCharcoal,
+        border = BorderStroke(1.dp, BorderSubtle)
+    ) {
+        Row(
             modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(28.dp))
-                .clickable {
-                    topChat?.let { onTopChatClick(it.chatName) }
-                },
-            shape = RoundedCornerShape(28.dp),
-            color = ColorDarkCharcoalCard
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            // Column 1: Active Chats
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "ACTIVE CHATS",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextSubtleLabel
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "$activeChatsCount",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = TextWhite
+                )
+            }
+
+            // Column 2: Total Sessions
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "SESSIONS",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextSubtleLabel
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "$totalSessionsCount",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = TextWhite
+                )
+            }
+
+            // Column 3: Peak Chat
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(18.dp)
+                    .weight(1.3f)
+                    .clickable(onClick = onTopChatClick),
+                horizontalAlignment = Alignment.End
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Peak Chat",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = ColorTextWhite
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF2C2C2E)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.NorthEast,
-                            contentDescription = null,
-                            modifier = Modifier.size(15.dp),
-                            tint = ColorGoldMuted
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(2.dp))
-
                 Text(
-                    text = "Today's leader",
+                    text = "PEAK CHAT",
                     style = MaterialTheme.typography.labelSmall,
-                    fontSize = 12.sp,
-                    color = ColorTextMuted
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextSubtleLabel
                 )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Coral Highlight Text for Peak Duration
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = if (topChat != null) TimeFormatUtils.formatDurationShort(topChat.durationMs) else "0m",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = ColorCoralRed
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Text(
-                    text = topChat?.displayName ?: "None",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFFD1D1D6),
+                    text = topChatDisplayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = PeriwinkleViolet,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -1207,416 +1812,114 @@ private fun TwinDarkBentoCards(
     }
 }
 
-// ==========================================
-// 8. WARM SAND 7-DAY BEZIER TREND CARD
-// ==========================================
-@Composable
-private fun WarmSandBezierTrendCard(
-    points: List<DailyUsagePoint>
-) {
-    val displayPoints = remember(points) {
-        if (points.isNotEmpty()) {
-            points.takeLast(7)
-        } else {
-            // Generate fallback 7 days
-            (0..6).map { i ->
-                DailyUsagePoint(
-                    date = TimeFormatUtils.dateStringDaysAgo(6 - i),
-                    dayLabel = when (i) {
-                        0 -> "Mon"; 1 -> "Tue"; 2 -> "Wed"; 3 -> "Thu"; 4 -> "Fri"; 5 -> "Sat"; else -> "Sun"
-                    },
-                    totalDurationMs = 0L
-                )
-            }
-        }
-    }
+// ============================================================================
+// 7. RANKED CONVERSATION ROW ITEM (Shopping / 46 transactions / 8.500 00 SOL)
+// ============================================================================
 
-    var selectedIndex by remember { mutableStateOf<Int?>(null) }
-    val maxDuration = remember(displayPoints) {
-        val maxVal = displayPoints.maxOfOrNull { it.totalDurationMs } ?: 0L
-        if (maxVal <= 0L) 3600_000L else maxVal
+@Composable
+private fun ConversationRowItem(
+    chat: ChatSummary,
+    index: Int,
+    onClick: () -> Unit
+) {
+    val chatColor = remember(chat.chatName, chat.colorTag) {
+        getChatAccentColor(chat.chatName, chat.colorTag)
+    }
+    val twoTone = remember(chat.durationMs) {
+        splitDurationTwoToneShort(chat.durationMs)
     }
 
     Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        color = ColorTrendSand
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(18.dp),
+        color = SurfaceCharcoal,
+        border = BorderStroke(1.dp, BorderSubtle)
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(22.dp)
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Header Row: "7-Day Screen Time" + ↗ button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "7-Day Screen Time",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF141615)
-                    )
-                    Text(
-                        text = "Last 7 days",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontSize = 13.sp,
-                        color = ColorTrendSandSubtext
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .border(1.dp, Color(0xFF5C5343), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.NorthEast,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = Color(0xFF141615)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            // Cubic Bezier Canvas
+            // Left: 44dp Circular dark button with chat avatar initial / accent ring
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(170.dp)
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(CircleButtonBg)
+                    .border(1.dp, chatColor.copy(alpha = 0.45f), CircleShape),
+                contentAlignment = Alignment.Center
             ) {
-                Canvas(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pointerInput(displayPoints) {
-                            detectTapGestures { tapOffset ->
-                                val slotW = size.width / displayPoints.size
-                                val tapped = (tapOffset.x / slotW).toInt()
-                                if (tapped in displayPoints.indices) {
-                                    selectedIndex = if (selectedIndex == tapped) null else tapped
-                                }
-                            }
-                        }
-                ) {
-                    val count = displayPoints.size
-                    if (count < 2) return@Canvas
-
-                    val availableHeight = size.height - 28.dp.toPx()
-                    val availableWidth = size.width
-                    val slotWidth = availableWidth / (count - 1).coerceAtLeast(1)
-
-                    // Draw 3 horizontal subtle grid lines
-                    val gridColor = Color(0xFF181715).copy(alpha = 0.12f)
-                    for (i in 1..3) {
-                        val y = (availableHeight / 4f) * i
-                        drawLine(
-                            color = gridColor,
-                            start = Offset(0f, y),
-                            end = Offset(availableWidth, y),
-                            strokeWidth = 1.dp.toPx()
-                        )
-                    }
-
-                    // Compute points coordinates
-                    val pointOffsets = displayPoints.mapIndexed { index, item ->
-                        val x = index * slotWidth
-                        val ratio = (item.totalDurationMs.toFloat() / maxDuration.toFloat()).coerceIn(0.08f, 0.95f)
-                        val y = availableHeight * (1f - ratio) + 8.dp.toPx()
-                        Offset(x, y)
-                    }
-
-                    // Draw smooth cubic Bezier path
-                    val path = Path().apply {
-                        moveTo(pointOffsets[0].x, pointOffsets[0].y)
-                        for (i in 0 until pointOffsets.size - 1) {
-                            val p0 = pointOffsets[i]
-                            val p1 = pointOffsets[i + 1]
-                            val controlPoint1 = Offset(p0.x + (p1.x - p0.x) / 2f, p0.y)
-                            val controlPoint2 = Offset(p0.x + (p1.x - p0.x) / 2f, p1.y)
-                            cubicTo(controlPoint1.x, controlPoint1.y, controlPoint2.x, controlPoint2.y, p1.x, p1.y)
-                        }
-                    }
-
-                    drawPath(
-                        path = path,
-                        color = Color(0xFF181715),
-                        style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round)
+                Text(
+                    text = chat.displayName.take(1).uppercase(Locale.getDefault()),
+                    style = TextStyle(
+                        color = chatColor,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
                     )
-
-                    // Draw circular dots at each point
-                    pointOffsets.forEachIndexed { index, offset ->
-                        val isSelected = index == (selectedIndex ?: (count - 1))
-                        drawCircle(
-                            color = if (isSelected) Color(0xFF181715) else Color(0xFF181715).copy(alpha = 0.6f),
-                            radius = if (isSelected) 5.dp.toPx() else 3.5.dp.toPx(),
-                            center = offset
-                        )
-                        if (isSelected) {
-                            drawCircle(
-                                color = ColorTrendSand,
-                                radius = 2.dp.toPx(),
-                                center = offset
-                            )
-                        }
-                    }
-                }
-
-                // Floating Mint Callout Pill over selected or latest point
-                val activeIndex = selectedIndex ?: (displayPoints.size - 1)
-                val activePoint = displayPoints.getOrNull(activeIndex)
-                if (activePoint != null) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(top = 4.dp)
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = ColorTrendSandCallout,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBCE0D0))
-                        ) {
-                            Text(
-                                text = "${activePoint.dayLabel}: ${TimeFormatUtils.formatDurationShort(activePoint.totalDurationMs)}",
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFF141615)
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Day labels Mon..Sun
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                displayPoints.forEachIndexed { index, point ->
-                    val isSelected = index == (selectedIndex ?: (displayPoints.size - 1))
-                    Text(
-                        text = point.dayLabel,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontSize = 12.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) Color(0xFF141615) else Color(0xFF3C3528)
-                    )
-                }
-            }
-        }
-    }
-}
-
-// ==========================================
-// 9. SOFT OLIVE CAPSULE BAR CARD
-// ==========================================
-@Composable
-private fun SoftOliveCapsuleBarCard(
-    points: List<DailyUsagePoint>
-) {
-    val displayPoints = remember(points) {
-        if (points.isNotEmpty()) {
-            points.takeLast(7)
-        } else {
-            (0..6).map { i ->
-                DailyUsagePoint(
-                    date = TimeFormatUtils.dateStringDaysAgo(6 - i),
-                    dayLabel = when (i) {
-                        0 -> "Mon"; 1 -> "Tue"; 2 -> "Wed"; 3 -> "Thu"; 4 -> "Fri"; 5 -> "Sat"; else -> "Sun"
-                    },
-                    totalDurationMs = 0L
                 )
             }
-        }
-    }
 
-    val maxDuration = remember(displayPoints) {
-        val maxVal = displayPoints.maxOfOrNull { it.totalDurationMs } ?: 0L
-        if (maxVal <= 0L) 3600_000L else maxVal
-    }
-
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        color = ColorBarOlive
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(22.dp)
-        ) {
-            // Header Row: "Daily vs Average" + ↗ button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            // Middle: Chat display name + session count & percentage subtitle
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 12.dp),
+                verticalArrangement = Arrangement.Center
             ) {
-                Column {
-                    Text(
-                        text = "Daily vs Average",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF141615)
-                    )
-                    Text(
-                        text = "Last 7 days",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontSize = 13.sp,
-                        color = ColorBarOliveSubtext
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .border(1.dp, Color(0xFF6E7260), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.NorthEast,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = Color(0xFF141615)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Legend Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+                Text(
+                    text = chat.displayName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextWhite,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(ColorCapsulePeach)
-                    )
                     Text(
-                        text = "Daily",
+                        text = "${chat.sessionCount} sessions • ${chat.percentage.toInt()}%",
                         style = MaterialTheme.typography.labelSmall,
                         fontSize = 12.sp,
-                        color = Color(0xFF141615)
+                        color = TextSubtleLabel
                     )
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(ColorButterGold)
-                    )
-                    Text(
-                        text = "Target / Avg",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontSize = 12.sp,
-                        color = Color(0xFF141615)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Capsule Bar Canvas with connected line overlay
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(160.dp)
-            ) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val count = displayPoints.size
-                    val availableH = size.height - 24.dp.toPx()
-                    val slotW = size.width / count.coerceAtLeast(1)
-                    val barW = (slotW * 0.48f).coerceIn(16.dp.toPx(), 32.dp.toPx())
-
-                    val targetPoints = mutableListOf<Offset>()
-
-                    // 1. Draw rounded capsule bars
-                    displayPoints.forEachIndexed { i, point ->
-                        val centerX = (i * slotW) + (slotW / 2f)
-                        val left = centerX - (barW / 2f)
-                        val ratio = (point.totalDurationMs.toFloat() / maxDuration.toFloat()).coerceIn(0.12f, 0.95f)
-                        val barH = availableH * ratio
-                        val top = availableH - barH
-
-                        drawRoundRect(
-                            color = ColorCapsulePeach.copy(alpha = 0.85f),
-                            topLeft = Offset(left, top),
-                            size = Size(barW, barH),
-                            cornerRadius = CornerRadius(16.dp.toPx(), 16.dp.toPx())
-                        )
-
-                        // Compute target line node slightly above the bar
-                        val targetY = (top * 0.9f).coerceAtLeast(10.dp.toPx())
-                        targetPoints.add(Offset(centerX, targetY))
-                    }
-
-                    // 2. Draw connected line overlay o—o
-                    for (i in 0 until targetPoints.size - 1) {
-                        drawLine(
-                            color = Color(0xFF181715),
-                            start = targetPoints[i],
-                            end = targetPoints[i + 1],
-                            strokeWidth = 2.dp.toPx()
-                        )
-                    }
-
-                    // 3. Draw circle nodes on the target line
-                    targetPoints.forEach { pt ->
-                        drawCircle(
-                            color = Color(0xFF181715),
-                            radius = 4.dp.toPx(),
-                            center = pt
-                        )
-                        drawCircle(
-                            color = ColorBarOlive,
-                            radius = 2.dp.toPx(),
-                            center = pt
+                    if (chat.dailyLimitMinutes != null) {
+                        val isOverLimit = chat.durationMs >= (chat.dailyLimitMinutes * 60_000L)
+                        Text(
+                            text = if (isOverLimit) "• Limit reached" else "• ${chat.dailyLimitMinutes}m limit",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (isOverLimit) SoftCoral else TextSubtleLabel
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Day labels
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                displayPoints.forEach { point ->
+            // Right: Two-tone duration display matching 8.500 00 SOL in reference image!
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    text = twoTone.primary,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextWhite
+                )
+                if (twoTone.secondary.isNotEmpty()) {
                     Text(
-                        text = point.dayLabel,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontSize = 12.sp,
+                        text = twoTone.secondary,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF383C2F)
+                        color = TextMutedGray
                     )
                 }
             }
@@ -1624,191 +1927,82 @@ private fun SoftOliveCapsuleBarCard(
     }
 }
 
-// ==========================================
-// 10. SOFT SAGE SUMMARY CARD (Pastel Pills)
-// ==========================================
+// ============================================================================
+// EMPTY CONVERSATIONS CARD
+// ============================================================================
+
 @Composable
-private fun SoftSageSummaryCard(
-    chatSummaries: List<ChatSummary>,
-    onChatClick: (String) -> Unit,
+private fun EmptyConversationsCard(
     onSeedDemoData: () -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        color = ColorSummarySage
+        shape = RoundedCornerShape(22.dp),
+        color = SurfaceCharcoal,
+        border = BorderStroke(1.dp, BorderSubtle)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(22.dp)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Header Row: "Summary" + ↗ button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Text(
+                text = "No chats recorded yet today",
+                style = MaterialTheme.typography.titleMedium,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = TextWhite
+            )
+            Text(
+                text = "Conversations you open in WhatsApp will automatically appear here with exact screen time.",
+                style = MaterialTheme.typography.bodySmall,
+                fontSize = 12.sp,
+                color = TextSubtleLabel,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Button(
+                onClick = onSeedDemoData,
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AcidLime,
+                    contentColor = AcidLimeInk
+                ),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp)
             ) {
-                Column {
-                    Text(
-                        text = "Summary",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF141615)
-                    )
-                    Text(
-                        text = "Today's conversations",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontSize = 13.sp,
-                        color = ColorSummarySageSubtext
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .border(1.dp, Color(0xFF6E7265), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.NorthEast,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = Color(0xFF141615)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (chatSummaries.isEmpty()) {
-                // Empty state within summary card
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "No chats recorded yet today",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF4C5449),
-                        fontWeight = FontWeight.Medium
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Button(
-                        onClick = onSeedDemoData,
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF141615),
-                            contentColor = ColorButterGold
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Load Sample Analytics",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            } else {
-                // Pastel Horizontal Pill Rows
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    chatSummaries.forEachIndexed { index, chat ->
-                        val pillBgColor = PastelRowColors[index % PastelRowColors.size]
-                        val chatColor = getChatColor(chat.chatName, chat.colorTag)
-
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp)
-                                .clip(RoundedCornerShape(20.dp))
-                                .clickable { onChatClick(chat.chatName) },
-                            shape = RoundedCornerShape(20.dp),
-                            color = pillBgColor
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 14.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                // Left: Colored ring dot + Title + Session count
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    // Colored ring dot
-                                    Box(
-                                        modifier = Modifier
-                                            .size(10.dp)
-                                            .border(2.5.dp, chatColor, CircleShape)
-                                    )
-
-                                    Column(verticalArrangement = Arrangement.Center) {
-                                        Text(
-                                            text = chat.displayName,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            fontSize = 15.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF141615),
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        Text(
-                                            text = "${chat.sessionCount} ${if (chat.sessionCount == 1) "session" else "sessions"}",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontSize = 11.sp,
-                                            color = Color(0xFF4C5449)
-                                        )
-                                    }
-                                }
-
-                                // Right: Crisp White Rounded Pill with Duration
-                                Surface(
-                                    shape = RoundedCornerShape(14.dp),
-                                    color = Color.White
-                                ) {
-                                    Text(
-                                        text = TimeFormatUtils.formatDurationShort(chat.durationMs),
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = Color(0xFF141615)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = AcidLimeInk
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Load Sample Analytics",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = AcidLimeInk
+                )
             }
         }
     }
 }
 
-// ==========================================
+// ============================================================================
 // STATUS PULSING DOT
-// ==========================================
+// ============================================================================
+
 @Composable
-private fun StatusIndicatorDot(
+private fun PulsingDot(
     isPulsing: Boolean,
     color: Color,
     size: Dp
 ) {
     if (isPulsing) {
-        val infiniteTransition = rememberInfiniteTransition(label = "statusDotPulse")
-        val pulseAlpha = infiniteTransition.animateFloat(
+        val infiniteTransition = rememberInfiniteTransition(label = "pulseDotTransition")
+        val alpha by infiniteTransition.animateFloat(
             initialValue = 0.35f,
             targetValue = 1f,
             animationSpec = infiniteRepeatable(
@@ -1820,7 +2014,7 @@ private fun StatusIndicatorDot(
         Box(
             modifier = Modifier
                 .size(size)
-                .graphicsLayer { alpha = pulseAlpha.value }
+                .graphicsLayer { this.alpha = alpha }
                 .clip(CircleShape)
                 .background(color)
         )
@@ -1831,5 +2025,20 @@ private fun StatusIndicatorDot(
                 .clip(CircleShape)
                 .background(color)
         )
+    }
+}
+
+/**
+ * Clean compact axis label formatter for chart reference lines.
+ */
+private fun formatChartAxisLabel(durationMs: Long): String {
+    if (durationMs <= 0L) return "0m"
+    val totalSeconds = durationMs / 1000
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    return when {
+        hours > 0 -> "${hours}h"
+        minutes > 0 -> "${minutes}m"
+        else -> "0m"
     }
 }

@@ -261,6 +261,7 @@ class FloatingPillOverlayManager(private val context: Context) {
 
         // Text accents
         sessionTimerTextView?.setTextColor(if (isOverLimit) COLOR_LIMIT_ACCENT else COLOR_TEXT_ACCENT)
+        todayTotalTextView?.setTextColor(if (isOverLimit) COLOR_LIMIT_ACCENT else COLOR_TEXT_MUTED)
     }
 
     private fun setupDragAndEdgeSnap(view: View) {
@@ -364,15 +365,15 @@ class FloatingPillOverlayManager(private val context: Context) {
     }
 
     companion object {
-        // Obsidian + Butter-Gold + Pastel Bento aesthetic
-        private val COLOR_BACKGROUND_SURFACE = Color.parseColor("#F218181A") // Obsidian/Charcoal container (~95% opacity)
-        private val COLOR_STROKE_NORMAL = Color.parseColor("#55EFE29B")     // subtle Butter-Gold border
-        private val COLOR_STROKE_LIMIT = Color.parseColor("#E6FF6464")      // coral limit border
-        private val COLOR_DOT_NORMAL = Color.parseColor("#8BE8B9")        // mint live dot
-        private val COLOR_DOT_LIMIT = Color.parseColor("#FFFF6464")       // coral red live dot
-        private val COLOR_TEXT_PRIMARY = Color.parseColor("#F5F5F7")      // high contrast chat title
-        private val COLOR_TEXT_ACCENT = Color.parseColor("#EFE29B")       // butter-gold session timer
-        private val COLOR_TEXT_MUTED = Color.parseColor("#9E9B8E")        // muted today total
-        private val COLOR_LIMIT_ACCENT = Color.parseColor("#FFFF6464")    // coral warning text
+        // Obsidian + Acid-Lime + Periwinkle Violet theme
+        private val COLOR_BACKGROUND_SURFACE = 0xF2141417.toInt()
+        private val COLOR_STROKE_NORMAL = 0x45E5FA6B.toInt()
+        private val COLOR_STROKE_LIMIT = 0x80FF6B6B.toInt()
+        private val COLOR_DOT_NORMAL = 0xFFE5FA6B.toInt()
+        private val COLOR_DOT_LIMIT = 0xFFFF6B6B.toInt()
+        private val COLOR_TEXT_PRIMARY = 0xFFF6F6F9.toInt()
+        private val COLOR_TEXT_ACCENT = 0xFFE5FA6B.toInt()
+        private val COLOR_TEXT_MUTED = 0xFF9F8FEF.toInt()
+        private val COLOR_LIMIT_ACCENT = 0xFFFF6B6B.toInt()
     }
 }

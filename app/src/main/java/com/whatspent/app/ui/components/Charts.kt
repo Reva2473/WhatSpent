@@ -3,10 +3,12 @@ package com.whatspent.app.ui.components
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,18 +59,20 @@ import androidx.compose.ui.unit.sp
 import com.whatspent.app.data.model.ChatSummary
 import com.whatspent.app.data.model.DailyUsagePoint
 import com.whatspent.app.data.model.formatDuration
+import com.whatspent.app.ui.theme.AcidLimeAccent
 import com.whatspent.app.ui.theme.ButterGoldAccent
-import com.whatspent.app.ui.theme.CapsuleGoldBar
-import com.whatspent.app.ui.theme.CapsulePeachBar
 import com.whatspent.app.ui.theme.CharcoalBentoSurface
 import com.whatspent.app.ui.theme.ElevatedCharcoalSurface
-import com.whatspent.app.ui.theme.MutedChampagneIcon
-import com.whatspent.app.ui.theme.PastelCardInk
-import com.whatspent.app.ui.theme.PastelCardMutedInk
-import com.whatspent.app.ui.theme.SageMintInnerCallout
-import com.whatspent.app.ui.theme.SoftOliveChartCard
-import com.whatspent.app.ui.theme.WarmSandCalloutPill
-import com.whatspent.app.ui.theme.WarmSandChartCard
+import com.whatspent.app.ui.theme.FloatingTooltipBorder
+import com.whatspent.app.ui.theme.FloatingTooltipSurface
+import com.whatspent.app.ui.theme.InactiveBarCharcoal
+import com.whatspent.app.ui.theme.MutedFractionText
+import com.whatspent.app.ui.theme.ObsidianBackground
+import com.whatspent.app.ui.theme.OnAcidLimeInk
+import com.whatspent.app.ui.theme.PeriwinkleBarHighlight
+import com.whatspent.app.ui.theme.PrimaryWhiteText
+import com.whatspent.app.ui.theme.SubtleAxisLabelText
+import com.whatspent.app.ui.theme.SubtleDarkBorder
 import com.whatspent.app.ui.theme.getChatColor
 import kotlin.math.atan2
 import kotlin.math.roundToInt
@@ -89,14 +93,13 @@ private data class SemiCircleSegment(
 )
 
 /**
- * Animated 180° Semi-Circular Arch Gauge Chart matching the signature "Top 5 chats by spend"
- * card from the design system.
+ * Animated 180° Semi-Circular Arch Gauge Chart matching the Obsidian + Acid-Lime aesthetic.
  *
- * - Draws a thick 28.dp arch from 180° to 360° across the top half with a subtle track (Color(0xFFA2C7B7)).
+ * - Draws a thick 28.dp arch from 180° to 360° across the top half with an InactiveBarCharcoal track.
  * - Proportional multi-colored segments from ChatChartPalette separated by crisp 2° gaps.
  * - Tap gesture detection on segments to select/deselect a chat.
- * - Floating #E8FCE2 (SageMintInnerCallout) rounded pill badge in the center showing duration (18.sp bold)
- *   and chat name (12.sp #496156), with interactive pager dots underneath.
+ * - Floating dark glass pill badge in the center showing duration (18.sp bold white)
+ *   and chat name (12.sp muted), with interactive neon acid-lime pager dots underneath.
  * - Summary legend below the arch with color dots and percentages.
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -108,7 +111,7 @@ fun AnimatedSemiCircleGaugeChart(
     onChatSelected: (String?) -> Unit,
     modifier: Modifier = Modifier,
     strokeWidth: Dp = 28.dp,
-    trackColor: Color = Color(0xFFA2C7B7),
+    trackColor: Color = InactiveBarCharcoal,
     showLegend: Boolean = true
 ) {
     val activeSummaries = remember(chatSummaries) {
@@ -265,7 +268,7 @@ fun AnimatedSemiCircleGaugeChart(
                 }
             }
 
-            // Floating #E8FCE2 (SageMintInnerCallout) rounded pill badge in the lower arch center
+            // Floating dark glass pill badge in the lower arch center
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -275,8 +278,9 @@ fun AnimatedSemiCircleGaugeChart(
             ) {
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = SageMintInnerCallout,
-                    shadowElevation = 1.dp,
+                    color = FloatingTooltipSurface,
+                    border = BorderStroke(1.dp, FloatingTooltipBorder),
+                    shadowElevation = 3.dp,
                     modifier = Modifier.clickable { onChatSelected(null) }
                 ) {
                     Column(
@@ -287,7 +291,7 @@ fun AnimatedSemiCircleGaugeChart(
                             text = displayChat?.formattedDuration ?: "0m",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = PastelCardInk,
+                            color = PrimaryWhiteText,
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(1.dp))
@@ -295,7 +299,7 @@ fun AnimatedSemiCircleGaugeChart(
                             text = displayChat?.displayName ?: "No chats today",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFF496156),
+                            color = SubtleAxisLabelText,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             textAlign = TextAlign.Center
@@ -305,7 +309,7 @@ fun AnimatedSemiCircleGaugeChart(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Interactive pager dots • • • underneath the callout pill
+                // Interactive pager dots underneath the callout pill
                 if (activeSummaries.isNotEmpty()) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
@@ -318,7 +322,7 @@ fun AnimatedSemiCircleGaugeChart(
                                     .size(if (isActive) 6.dp else 4.5.dp)
                                     .clip(CircleShape)
                                     .background(
-                                        if (isActive) PastelCardInk else PastelCardInk.copy(alpha = 0.25f)
+                                        if (isActive) AcidLimeAccent else SubtleDarkBorder
                                     )
                                     .clickable {
                                         onChatSelected(activeSummaries[index].chatName)
@@ -352,10 +356,14 @@ fun AnimatedSemiCircleGaugeChart(
                                 else onChatSelected(segment.summary.chatName)
                             },
                         color = if (isSelected) {
-                            segment.color.copy(alpha = 0.25f)
+                            segment.color.copy(alpha = 0.20f)
                         } else {
-                            Color(0xFF121413).copy(alpha = 0.08f)
+                            ElevatedCharcoalSurface
                         },
+                        border = BorderStroke(
+                            1.dp,
+                            if (isSelected) segment.color.copy(alpha = 0.5f) else SubtleDarkBorder
+                        ),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Row(
@@ -373,7 +381,7 @@ fun AnimatedSemiCircleGaugeChart(
                                 text = segment.summary.displayName,
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = PastelCardInk,
+                                color = PrimaryWhiteText,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -381,7 +389,7 @@ fun AnimatedSemiCircleGaugeChart(
                             Text(
                                 text = "${segment.summary.percentage.roundToInt()}%",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = PastelCardMutedInk
+                                color = SubtleAxisLabelText
                             )
                         }
                     }
@@ -421,21 +429,17 @@ fun AnimatedChatDonutChart(
 // ============================================================================
 
 /**
- * 7-Day Trend Chart designed for the #C9BA9B (WarmSandChartCard) surface.
- *
- * - Draws subtle horizontal gridlines (Color(0xFFB3A486)).
- * - Y-axis labels on the left, X-axis day labels at the bottom.
- * - Smooth cubic Bezier curve in #181715 (3.dp stroke) with circular node points.
- * - Floating #DAF5E6 (WarmSandCalloutPill) callout badge positioned above the selected or peak day point.
+ * 7-Day Trend Chart styled with sleek dark charcoal surface, Acid-Lime cubic curve,
+ * subtle horizontal dashed gridlines, and floating dark glass callout badge.
  */
 @Composable
 fun WarmSandBezierTrendChart(
     points: List<DailyUsagePoint>,
     modifier: Modifier = Modifier,
-    cardBackgroundColor: Color = WarmSandChartCard,
-    calloutPillColor: Color = WarmSandCalloutPill,
-    lineColor: Color = Color(0xFF181715),
-    gridColor: Color = Color(0xFFB3A486),
+    cardBackgroundColor: Color = CharcoalBentoSurface,
+    calloutPillColor: Color = FloatingTooltipSurface,
+    lineColor: Color = AcidLimeAccent,
+    gridColor: Color = SubtleDarkBorder,
     chartHeight: Dp = 190.dp,
     selectedDayIndex: Int? = null,
     onDaySelected: ((Int?) -> Unit)? = null
@@ -450,7 +454,7 @@ fun WarmSandBezierTrendChart(
             Text(
                 text = "No activity in the last 7 days",
                 style = MaterialTheme.typography.bodyMedium,
-                color = PastelCardMutedInk
+                color = SubtleAxisLabelText
             )
         }
         return
@@ -507,19 +511,19 @@ fun WarmSandBezierTrendChart(
                 text = formatDuration(maxDurationMs),
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Medium,
-                color = PastelCardMutedInk
+                color = SubtleAxisLabelText
             )
             Text(
                 text = formatDuration(maxDurationMs / 2),
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Medium,
-                color = PastelCardMutedInk
+                color = SubtleAxisLabelText
             )
             Text(
                 text = "0m",
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Medium,
-                color = PastelCardMutedInk
+                color = SubtleAxisLabelText
             )
         }
 
@@ -603,7 +607,7 @@ fun WarmSandBezierTrendChart(
                     path = fillPath,
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            lineColor.copy(alpha = 0.12f),
+                            lineColor.copy(alpha = 0.22f),
                             lineColor.copy(alpha = 0.01f)
                         ),
                         startY = topY,
@@ -611,7 +615,7 @@ fun WarmSandBezierTrendChart(
                     )
                 )
 
-                // 5. Stroke the smooth cubic Bezier line (3.dp in #181715)
+                // 5. Stroke the smooth cubic Bezier line
                 drawPath(
                     path = curvePath,
                     color = lineColor,
@@ -632,7 +636,7 @@ fun WarmSandBezierTrendChart(
                             center = pt
                         )
                         drawCircle(
-                            color = calloutPillColor,
+                            color = ObsidianBackground,
                             radius = 3.2.dp.toPx(),
                             center = pt
                         )
@@ -652,11 +656,11 @@ fun WarmSandBezierTrendChart(
             }
         }
 
-        // Floating #DAF5E6 (WarmSandCalloutPill) callout badge
+        // Floating dark glass callout badge
         if (targetPoint != null && badgeOffset != null) {
             val offset = badgeOffset!!
             val density = LocalDensity.current
-            val pillHalfWidthPx = with(density) { 42.dp.toPx() }
+            val pillHalfWidthPx = with(density) { 48.dp.toPx() }
             val badgeLiftPx = with(density) { 28.dp.toPx() }
             val minTopPx = with(density) { 4.dp.toPx() }
             Box(
@@ -667,7 +671,8 @@ fun WarmSandBezierTrendChart(
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = calloutPillColor,
-                    shadowElevation = 2.dp,
+                    border = BorderStroke(1.dp, FloatingTooltipBorder),
+                    shadowElevation = 3.dp,
                     modifier = Modifier.offset {
                         val clampedX = (offset.x - pillHalfWidthPx).coerceAtLeast(0f)
                         val clampedY = (offset.y - badgeLiftPx).coerceAtLeast(minTopPx)
@@ -678,7 +683,7 @@ fun WarmSandBezierTrendChart(
                         text = "${targetPoint.dayLabel}: ${targetPoint.formattedDuration}",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = PastelCardInk,
+                        color = PrimaryWhiteText,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                     )
                 }
@@ -701,7 +706,7 @@ fun WarmSandBezierTrendChart(
                     text = point.dayLabel,
                     fontSize = 11.sp,
                     fontWeight = if (isTarget) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isTarget) PastelCardInk else PastelCardMutedInk,
+                    color = if (isTarget) PrimaryWhiteText else SubtleAxisLabelText,
                     textAlign = TextAlign.Center
                 )
             }
@@ -710,21 +715,29 @@ fun WarmSandBezierTrendChart(
 }
 
 // ============================================================================
-// 3. SOFT OLIVE CAPSULE BAR CHART & SEVEN DAY USAGE BAR CHART
+// 3. SOLANA-STYLE DARK BAR CHART (Pitch Black + Acid-Lime / Periwinkle Violet)
 // ============================================================================
 
 /**
- * Capsule Bar Chart styled with rounded vertical capsule bars in #F3B282 peach and #F7D486 butter-gold,
- * a connected o—o dark trend line overlay, and interactive tap-to-inspect callout pill.
+ * Solana-style dark mode Bar Chart matching the reference design.
  *
- * Compatible with both #CED2BE pastel bento cards and dark obsidian bento surfaces.
+ * - Pitch-black canvas with horizontal dashed reference lines at 100%, 50%, and 0%.
+ * - Crisp right-aligned Y-axis labels (e.g. 2h, 1h, 0m).
+ * - Thick rounded vertical bars (CornerRadius 14.dp):
+ *   - Unselected bars: Deep matte charcoal (#222227).
+ *   - Selected / Active / Peak bar: Vibrant Periwinkle Violet (#9F8FEF) with subtle top glow/gradient.
+ * - Floating dark glass tooltip pill (#232329, 14.dp corners, #34343C border) hovering directly
+ *   above the selected bar with two-tone primary + muted duration text.
+ * - Clean X-axis day labels with interactive tap selection.
  */
 @Composable
-fun SoftOliveCapsuleBarChart(
+fun SolanaStyleBarChart(
     points: List<DailyUsagePoint>,
     modifier: Modifier = Modifier,
-    cardBackgroundColor: Color = SoftOliveChartCard,
-    isPastelCard: Boolean = true,
+    highlightColor: Color = PeriwinkleBarHighlight,
+    inactiveBarColor: Color = InactiveBarCharcoal,
+    gridLineColor: Color = SubtleDarkBorder,
+    axisLabelColor: Color = SubtleAxisLabelText,
     chartHeight: Dp = 190.dp,
     selectedDayIndex: Int? = null,
     onDaySelected: ((Int?) -> Unit)? = null
@@ -739,7 +752,7 @@ fun SoftOliveCapsuleBarChart(
             Text(
                 text = "No activity in the last 7 days",
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (isPastelCard) PastelCardMutedInk else MutedChampagneIcon
+                color = axisLabelColor
             )
         }
         return
@@ -751,7 +764,7 @@ fun SoftOliveCapsuleBarChart(
     val datesKey = remember(points) { points.map { it.date } }
     val animationProgress = remember { Animatable(1f) }
     LaunchedEffect(datesKey) {
-        animationProgress.snapTo(0.25f)
+        animationProgress.snapTo(0.2f)
         animationProgress.animateTo(
             targetValue = 1f,
             animationSpec = spring(
@@ -772,26 +785,66 @@ fun SoftOliveCapsuleBarChart(
     val targetIndex = effectiveSelectedDay ?: peakIndex
     val targetPoint = points.getOrNull(targetIndex)
 
-    val trackColor = if (isPastelCard) Color(0xFFB5BAA5) else ElevatedCharcoalSurface
-    val trendLineColor = if (isPastelCard) Color(0xFF181715) else ButterGoldAccent
-
-    val topPadding = 32.dp
+    val leftPadding = 8.dp
+    val rightPadding = 42.dp
+    val topPadding = 38.dp
     val bottomPadding = 26.dp
+    val usableHeightDp = chartHeight - topPadding - bottomPadding
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(chartHeight)
     ) {
-        var calloutAnchor by remember { mutableStateOf<Offset?>(null) }
+        var tooltipAnchor by remember { mutableStateOf<Offset?>(null) }
 
+        // 1. Right-side Y-Axis Labels (Top, Middle, Bottom)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(end = 4.dp)
+        ) {
+            Text(
+                text = formatDuration(maxDurationMs),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = axisLabelColor,
+                textAlign = TextAlign.End,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(y = topPadding - 8.dp)
+            )
+            Text(
+                text = formatDuration(maxDurationMs / 2),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = axisLabelColor,
+                textAlign = TextAlign.End,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(y = topPadding + (usableHeightDp * 0.5f) - 8.dp)
+            )
+            Text(
+                text = "0m",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = axisLabelColor,
+                textAlign = TextAlign.End,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(y = topPadding + usableHeightDp - 8.dp)
+            )
+        }
+
+        // 2. Canvas for Dashed Reference Lines & Vertical Rounded Bars
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 12.dp)
+                .padding(start = leftPadding, end = rightPadding)
                 .pointerInput(points) {
                     detectTapGestures { tapOffset ->
-                        val slotWidth = size.width / points.size
+                        val count = points.size
+                        val slotWidth = size.width / count
                         val tappedIdx = (tapOffset.x / slotWidth).toInt().coerceIn(0, points.size - 1)
                         if (onDaySelected != null) {
                             onDaySelected(if (effectiveSelectedDay == tappedIdx) null else tappedIdx)
@@ -801,181 +854,215 @@ fun SoftOliveCapsuleBarChart(
                     }
                 }
         ) {
-            val count = points.size
-            val slotWidth = size.width / count
-            val barWidth = (slotWidth * 0.45f).coerceIn(12.dp.toPx(), 28.dp.toPx())
+            val usableWidth = size.width
             val topY = topPadding.toPx()
-            val availableHeight = size.height - topY - bottomPadding.toPx()
+            val usableHeight = size.height - topY - bottomPadding.toPx()
             val progress = animationProgress.value
 
-            val nodePoints = mutableListOf<Offset>()
+            // Dashed horizontal gridlines (100%, 50%, 0%)
+            val dashEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+            listOf(0f, 0.5f, 1f).forEach { ratio ->
+                val gridY = topY + (usableHeight * ratio)
+                drawLine(
+                    color = gridLineColor,
+                    start = Offset(0f, gridY),
+                    end = Offset(usableWidth, gridY),
+                    strokeWidth = 1.dp.toPx(),
+                    pathEffect = dashEffect
+                )
+            }
 
-            // 1. Draw vertical capsule tracks and active pill bars
+            // Draw thick rounded vertical bars
+            val count = points.size
+            val slotWidth = usableWidth / count
+            val barWidth = (slotWidth * 0.46f).coerceIn(14.dp.toPx(), 26.dp.toPx())
+            val cornerRadius = CornerRadius(14.dp.toPx(), 14.dp.toPx())
+
             points.forEachIndexed { i, p ->
                 val centerX = (i * slotWidth) + (slotWidth / 2f)
                 val left = centerX - (barWidth / 2f)
-                val radius = barWidth / 2f
-
-                // Capsule background track
-                drawRoundRect(
-                    color = trackColor,
-                    topLeft = Offset(left, topY),
-                    size = Size(barWidth, availableHeight),
-                    cornerRadius = CornerRadius(radius, radius)
-                )
-
-                // Active foreground capsule bar
                 val ratio = (p.totalDurationMs.toFloat() / maxDurationMs.toFloat()).coerceIn(0f, 1f)
-                val barHeight = (availableHeight * ratio * progress).coerceAtLeast(if (p.totalDurationMs > 0L) radius * 2 else 0f)
-                val barTop = (topY + availableHeight) - barHeight
-
-                val isToday = i == points.size - 1
+                val animatedHeight = (usableHeight * ratio * progress)
+                    .coerceAtLeast(if (p.totalDurationMs > 0L) 12.dp.toPx() else 6.dp.toPx())
+                val barTop = (topY + usableHeight) - animatedHeight
                 val isSelected = i == targetIndex
 
-                val barColor = when {
-                    isSelected -> CapsuleGoldBar
-                    isToday -> CapsuleGoldBar
-                    i % 2 == 0 -> CapsulePeachBar
-                    else -> CapsuleGoldBar
-                }
-
-                if (barHeight > 0f) {
+                if (isSelected) {
+                    // Vibrant Periwinkle Violet with subtle top glow
+                    val glowBrush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFFB5A7FF),
+                            highlightColor
+                        ),
+                        startY = barTop,
+                        endY = barTop + animatedHeight
+                    )
                     drawRoundRect(
-                        color = barColor,
+                        brush = glowBrush,
                         topLeft = Offset(left, barTop),
-                        size = Size(barWidth, barHeight),
-                        cornerRadius = CornerRadius(radius, radius)
+                        size = Size(barWidth, animatedHeight),
+                        cornerRadius = cornerRadius
                     )
-                }
-
-                val nodeCenter = Offset(centerX, barTop)
-                nodePoints.add(nodeCenter)
-            }
-
-            // Update callout anchor for target day
-            if (targetIndex in nodePoints.indices) {
-                calloutAnchor = nodePoints[targetIndex]
-            }
-
-            // 2. Connected o—o dark ink trend line overlay
-            if (nodePoints.size > 1) {
-                for (i in 0 until nodePoints.size - 1) {
-                    drawLine(
-                        color = trendLineColor,
-                        start = nodePoints[i],
-                        end = nodePoints[i + 1],
-                        strokeWidth = 2.dp.toPx(),
-                        cap = StrokeCap.Round
+                    tooltipAnchor = Offset(centerX, barTop)
+                } else {
+                    // Deep matte charcoal inactive bar
+                    drawRoundRect(
+                        color = inactiveBarColor,
+                        topLeft = Offset(left, barTop),
+                        size = Size(barWidth, animatedHeight),
+                        cornerRadius = cornerRadius
                     )
-                }
-
-                nodePoints.forEachIndexed { i, pt ->
-                    val isTarget = i == targetIndex
-                    if (isTarget) {
-                        drawCircle(
-                            color = trendLineColor,
-                            radius = 5.dp.toPx(),
-                            center = pt
-                        )
-                        drawCircle(
-                            color = if (isPastelCard) SageMintInnerCallout else CharcoalBentoSurface,
-                            radius = 3.dp.toPx(),
-                            center = pt
-                        )
-                    } else {
-                        drawCircle(
-                            color = trendLineColor,
-                            radius = 3.5.dp.toPx(),
-                            center = pt
-                        )
-                        drawCircle(
-                            color = cardBackgroundColor,
-                            radius = 1.8.dp.toPx(),
-                            center = pt
-                        )
-                    }
                 }
             }
         }
 
-        // Floating interactive tap-to-inspect callout pill
-        if (targetPoint != null && calloutAnchor != null) {
-            val anchor = calloutAnchor!!
+        // 3. Floating Dark Glass Tooltip Pill Hovering Directly Above Selected Bar
+        if (targetPoint != null && tooltipAnchor != null) {
+            val anchor = tooltipAnchor!!
             val density = LocalDensity.current
-            val pillHalfWidthPx = with(density) { 43.dp.toPx() }
-            val badgeLiftPx = with(density) { 28.dp.toPx() }
-            val minTopPx = with(density) { 4.dp.toPx() }
+            val pillHalfWidthPx = with(density) { 48.dp.toPx() }
+            val pillLiftPx = with(density) { 34.dp.toPx() }
+            val minTopPx = with(density) { 2.dp.toPx() }
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 12.dp)
+                    .padding(start = leftPadding, end = rightPadding)
             ) {
                 Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = if (isPastelCard) SageMintInnerCallout else ButterGoldAccent,
-                    shadowElevation = 2.dp,
+                    shape = RoundedCornerShape(14.dp),
+                    color = FloatingTooltipSurface,
+                    border = BorderStroke(1.dp, FloatingTooltipBorder),
+                    shadowElevation = 4.dp,
                     modifier = Modifier.offset {
                         val clampedX = (anchor.x - pillHalfWidthPx).coerceAtLeast(0f)
-                        val clampedY = (anchor.y - badgeLiftPx).coerceAtLeast(minTopPx)
+                        val clampedY = (anchor.y - pillLiftPx).coerceAtLeast(minTopPx)
                         IntOffset(clampedX.roundToInt(), clampedY.roundToInt())
                     }
                 ) {
-                    Text(
-                        text = "${targetPoint.dayLabel}: ${targetPoint.formattedDuration}",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PastelCardInk,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                    )
+                    val durationParts = targetPoint.formattedDuration.split(" ")
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        if (durationParts.size >= 2) {
+                            Text(
+                                text = durationParts[0],
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PrimaryWhiteText
+                            )
+                            Text(
+                                text = durationParts[1],
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MutedFractionText
+                            )
+                        } else {
+                            Text(
+                                text = targetPoint.formattedDuration,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PrimaryWhiteText
+                            )
+                        }
+                        Text(
+                            text = "• ${targetPoint.dayLabel}",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Normal,
+                            color = axisLabelColor
+                        )
+                    }
                 }
             }
         }
 
-        // Bottom day labels row
+        // 4. X-Axis Day Labels Row at Bottom
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .padding(horizontal = 12.dp)
-                .height(24.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
+                .align(Alignment.BottomStart)
+                .padding(start = leftPadding, end = rightPadding)
+                .height(bottomPadding),
             verticalAlignment = Alignment.CenterVertically
         ) {
             points.forEachIndexed { index, point ->
-                val isTarget = index == targetIndex
-                Text(
-                    text = point.dayLabel,
-                    fontSize = 11.sp,
-                    fontWeight = if (isTarget) FontWeight.Bold else FontWeight.Medium,
-                    color = when {
-                        isTarget && isPastelCard -> PastelCardInk
-                        isTarget -> ButterGoldAccent
-                        isPastelCard -> PastelCardMutedInk
-                        else -> MutedChampagneIcon
-                    },
-                    textAlign = TextAlign.Center
-                )
+                val isSelected = index == targetIndex
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            if (onDaySelected != null) {
+                                onDaySelected(if (targetIndex == index) null else index)
+                            } else {
+                                internalSelectedDay = if (internalSelectedDay == index) null else index
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = point.dayLabel,
+                        fontSize = 12.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        color = if (isSelected) PrimaryWhiteText else axisLabelColor,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
     }
 }
 
+// ============================================================================
+// 4. CAPSULE & SEVEN DAY BAR CHART COMPATIBILITY BRIDGES
+// ============================================================================
+
 /**
- * Updated 7-Day Usage Bar Chart rendering interactive capsule bars and trend line overlay.
- * Compatible with existing callers across dark bento cards and detail screens.
+ * Capsule Bar Chart now powered by the sleek [SolanaStyleBarChart] design.
+ * Fully compatible with existing call sites.
+ */
+@Composable
+fun SoftOliveCapsuleBarChart(
+    points: List<DailyUsagePoint>,
+    modifier: Modifier = Modifier,
+    cardBackgroundColor: Color = CharcoalBentoSurface,
+    isPastelCard: Boolean = false,
+    chartHeight: Dp = 190.dp,
+    selectedDayIndex: Int? = null,
+    onDaySelected: ((Int?) -> Unit)? = null
+) {
+    SolanaStyleBarChart(
+        points = points,
+        modifier = modifier,
+        chartHeight = chartHeight,
+        selectedDayIndex = selectedDayIndex,
+        onDaySelected = onDaySelected
+    )
+}
+
+/**
+ * 7-Day Usage Bar Chart rendering interactive rounded bars, Periwinkle Violet highlight,
+ * and floating dark glass tooltip pill.
  */
 @Composable
 fun SevenDayUsageBarChart(
     points: List<DailyUsagePoint>,
-    highlightColor: Color = MaterialTheme.colorScheme.primary,
+    highlightColor: Color = PeriwinkleBarHighlight,
     modifier: Modifier = Modifier,
-    chartHeight: Dp = 190.dp
+    chartHeight: Dp = 190.dp,
+    selectedDayIndex: Int? = null,
+    onDaySelected: ((Int?) -> Unit)? = null
 ) {
-    SoftOliveCapsuleBarChart(
+    SolanaStyleBarChart(
         points = points,
+        highlightColor = highlightColor,
         modifier = modifier,
-        cardBackgroundColor = CharcoalBentoSurface,
-        isPastelCard = false,
-        chartHeight = chartHeight
+        chartHeight = chartHeight,
+        selectedDayIndex = selectedDayIndex,
+        onDaySelected = onDaySelected
     )
 }

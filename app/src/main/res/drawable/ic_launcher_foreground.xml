@@ -4,14 +4,14 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Chat bubble outline in Sage Mint -->
+    <!-- Chat bubble outline in Neon Acid-Lime -->
     <path
-        android:fillColor="#BCE0D0"
+        android:fillColor="#E5FA6B"
         android:pathData="M54,28 C39.64,28 28,39.64 28,54 C28,59.34 29.62,64.3 32.4,68.44 L29,80 L41.04,76.84 C44.92,78.86 49.34,80 54,80 C68.36,80 80,68.36 80,54 C80,39.64 68.36,28 54,28 Z" />
     <!-- Pulse heartbeat inside in Dark Ink -->
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#141413"
+        android:strokeColor="#0E0F0A"
         android:strokeWidth="3.6"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"

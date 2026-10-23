@@ -34,21 +34,18 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -73,27 +70,20 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.whatspent.app.util.BiometricAuthHelper
 import com.whatspent.app.util.PermissionHelper
 
-// Explicit Design System Palette
+// Sleek Obsidian & Neon Acid-Lime Design Tokens
 private val ObsidianBg = Color(0xFF0B0B0D)
-private val CharcoalBento = Color(0xFF1F1F21)
-private val DarkCircleBtn = Color(0xFF262522)
-private val ButterGold = Color(0xFFEFE29B)
-private val SageMintCard = Color(0xFFBCE0D0)
-private val SoftSageListCard = Color(0xFFCBD1C4)
-private val PastelPills = listOf(
-    Color(0xFFDCE2F9), // Lavender
-    Color(0xFFCBEAF6), // Sky
-    Color(0xFFC6F0DC), // Mint
-    Color(0xFFF7F2CD)  // Cream
-)
-private val MintPositiveBadge = Color(0xFF8BE8B9)
-private val CoralAccent = Color(0xFFFF6464)
-private val TextDarkInk = Color(0xFF121413)
-private val TextMutedDark = Color(0xFF4A4D4A)
-private val TextLight = Color(0xFFF5F5F7)
-private val TextMutedLight = Color(0xFF9E9B8E)
+private val SurfaceCharcoal = Color(0xFF17171A)
+private val CircleBtnDark = Color(0xFF1C1C20)
+private val BarInactiveCharcoal = Color(0xFF222227)
+private val BorderSubtle = Color(0xFF28282D)
+private val AcidLime = Color(0xFFE5FA6B)
+private val OnAcidLimeInk = Color(0xFF0E0F0A)
+private val PeriwinkleViolet = Color(0xFF9F8FEF)
+private val TextWhite = Color(0xFFF6F6F9)
+private val TextMutedUnit = Color(0xFF6E6E77)
+private val TextSubtle = Color(0xFF8A8A93)
+private val CoralAlert = Color(0xFFFF6B6B)
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     floatingPillEnabled: Boolean,
@@ -124,7 +114,7 @@ fun SettingsScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    // Runtime permission launcher for notifications
+    // Runtime permission launcher for notifications on Android 13+
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -140,48 +130,84 @@ fun SettingsScreen(
         permissionState = PermissionHelper.getPermissionStatus(context)
     }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = ObsidianBg,
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "Settings",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextLight,
-                        letterSpacing = (-0.3).sp
-                    )
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = ObsidianBg
+    // Root layout eliminating top/bottom empty space (no Scaffold / TopAppBar)
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(ObsidianBg)
+    ) {
+        // Compact Custom Header Row (height 44.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 4.dp)
+                .height(44.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(CircleBtnDark),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Tune,
+                    contentDescription = "Preferences",
+                    tint = TextSubtle,
+                    modifier = Modifier.size(18.dp)
                 )
+            }
+
+            Text(
+                text = "Settings",
+                fontSize = 19.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = TextWhite,
+                letterSpacing = (-0.3).sp
             )
+
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(CircleBtnDark)
+                    .clickable(onClick = onNavigateToOnboarding),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.RestartAlt,
+                    contentDescription = "Setup Wizard",
+                    tint = AcidLime,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
         }
-    ) { innerPadding ->
+
+        // Scrollable Screen Content
         LazyColumn(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+                .fillMaxWidth()
+                .weight(1f),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // (01) Permissions Health Section
             item(key = "permissions_health_section") {
                 SectionHeader(title = "(01) Permissions Health")
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                // Permissions Card in SoftSageListCard with 4 pastel pill rows
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(32.dp),
-                    color = SoftSageListCard
+                    shape = RoundedCornerShape(24.dp),
+                    color = SurfaceCharcoal,
+                    border = BorderStroke(1.dp, BorderSubtle)
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(20.dp),
+                            .padding(18.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Column {
@@ -189,36 +215,35 @@ fun SettingsScreen(
                                 text = "Local Monitoring System",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = TextDarkInk
+                                color = TextWhite
                             )
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = "WhatSpent processes all active chats directly on your device.",
                                 fontSize = 12.sp,
-                                color = TextMutedDark
+                                color = TextSubtle
                             )
                         }
 
                         Spacer(modifier = Modifier.height(4.dp))
 
                         // Row 1: Accessibility Tracker Service
-                        PastelPermissionPillRow(
+                        DarkPermissionRow(
                             title = "Accessibility Tracker",
                             description = "Detects conversation opens locally",
                             icon = Icons.Default.Security,
                             isGranted = permissionState.isAccessibilityEnabled,
-                            backgroundColor = PastelPills[0],
                             onGrantClick = {
                                 context.startActivity(PermissionHelper.createAccessibilitySettingsIntent())
                             }
                         )
 
                         // Row 2: Notifications
-                        PastelPermissionPillRow(
+                        DarkPermissionRow(
                             title = "Tracking Notifications",
                             description = "Foreground tracker & limit alerts",
                             icon = Icons.Default.Notifications,
                             isGranted = permissionState.isNotificationGranted,
-                            backgroundColor = PastelPills[1],
                             onGrantClick = {
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                     runCatching {
@@ -237,24 +262,22 @@ fun SettingsScreen(
                         )
 
                         // Row 3: Battery Optimization Whitelist
-                        PastelPermissionPillRow(
+                        DarkPermissionRow(
                             title = "Battery Optimization",
                             description = "Prevents OEM background termination",
                             icon = Icons.Default.BatteryAlert,
                             isGranted = permissionState.isBatteryOptimizationIgnored,
-                            backgroundColor = PastelPills[2],
                             onGrantClick = {
                                 context.startActivity(PermissionHelper.createBatteryOptimizationExemptionIntent(context))
                             }
                         )
 
                         // Row 4: Floating Overlay Pill
-                        PastelPermissionPillRow(
+                        DarkPermissionRow(
                             title = "Floating Overlay Pill",
                             description = "Draggable live timer chip over chats",
                             icon = Icons.Default.Layers,
                             isGranted = permissionState.isOverlayGranted,
-                            backgroundColor = PastelPills[3],
                             onGrantClick = {
                                 context.startActivity(PermissionHelper.createOverlayPermissionIntent(context))
                             }
@@ -266,18 +289,18 @@ fun SettingsScreen(
             // (02) Features & Privacy Section
             item(key = "features_privacy_section") {
                 SectionHeader(title = "(02) Features & Privacy")
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(28.dp),
-                    color = CharcoalBento,
-                    border = BorderStroke(1.dp, Color(0x1FFFFFFF))
+                    shape = RoundedCornerShape(24.dp),
+                    color = SurfaceCharcoal,
+                    border = BorderStroke(1.dp, BorderSubtle)
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(20.dp),
+                            .padding(18.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         FeatureSwitchRow(
@@ -301,7 +324,7 @@ fun SettingsScreen(
 
                         Surface(
                             modifier = Modifier.fillMaxWidth().height(1.dp),
-                            color = Color(0x14FFFFFF)
+                            color = BorderSubtle
                         ) {}
 
                         FeatureSwitchRow(
@@ -334,7 +357,7 @@ fun SettingsScreen(
 
                         Surface(
                             modifier = Modifier.fillMaxWidth().height(1.dp),
-                            color = Color(0x14FFFFFF)
+                            color = BorderSubtle
                         ) {}
 
                         FeatureSwitchRow(
@@ -351,36 +374,42 @@ fun SettingsScreen(
             // (03) Data Management Section
             item(key = "data_management_section") {
                 SectionHeader(title = "(03) Data Management")
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(28.dp),
-                    color = CharcoalBento,
-                    border = BorderStroke(1.dp, Color(0x1FFFFFFF))
+                    shape = RoundedCornerShape(24.dp),
+                    color = SurfaceCharcoal,
+                    border = BorderStroke(1.dp, BorderSubtle)
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(20.dp),
+                            .padding(18.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         OutlinedButton(
                             onClick = onNavigateToOnboarding,
-                            modifier = Modifier.fillMaxWidth().height(50.dp),
-                            shape = RoundedCornerShape(22.dp),
-                            border = BorderStroke(1.dp, Color(0x33FFFFFF))
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            shape = RoundedCornerShape(20.dp),
+                            border = BorderStroke(1.dp, BorderSubtle),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = CircleBtnDark,
+                                contentColor = TextWhite
+                            )
                         ) {
                             Icon(
                                 imageVector = Icons.Default.RestartAlt,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
-                                tint = ButterGold
+                                tint = TextWhite
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 "Re-open Permission Setup Wizard",
-                                color = TextLight,
+                                color = TextWhite,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -390,18 +419,20 @@ fun SettingsScreen(
                                 onSeedDemoData()
                                 Toast.makeText(context, "Sample analytics loaded!", Toast.LENGTH_SHORT).show()
                             },
-                            modifier = Modifier.fillMaxWidth().height(50.dp),
-                            shape = RoundedCornerShape(22.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            shape = RoundedCornerShape(20.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = ButterGold,
-                                contentColor = Color(0xFF141413)
+                                containerColor = AcidLime,
+                                contentColor = OnAcidLimeInk
                             )
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
-                                tint = Color(0xFF141413)
+                                tint = OnAcidLimeInk
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Load Sample Analytics", fontWeight = FontWeight.Bold)
@@ -409,10 +440,12 @@ fun SettingsScreen(
 
                         Button(
                             onClick = { showClearDataDialog = true },
-                            modifier = Modifier.fillMaxWidth().height(50.dp),
-                            shape = RoundedCornerShape(22.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            shape = RoundedCornerShape(20.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = CoralAccent,
+                                containerColor = CoralAlert,
                                 contentColor = Color.White
                             )
                         ) {
@@ -429,8 +462,9 @@ fun SettingsScreen(
                 }
             }
 
-            item {
-                Spacer(modifier = Modifier.height(28.dp))
+            // Minimal bottom spacer
+            item(key = "bottom_spacer") {
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
@@ -438,19 +472,19 @@ fun SettingsScreen(
     if (showClearDataDialog) {
         AlertDialog(
             onDismissRequest = { showClearDataDialog = false },
-            containerColor = CharcoalBento,
-            shape = RoundedCornerShape(28.dp),
+            containerColor = SurfaceCharcoal,
+            shape = RoundedCornerShape(24.dp),
             title = {
                 Text(
                     text = "Clear All Tracking Data?",
                     fontWeight = FontWeight.Bold,
-                    color = TextLight
+                    color = TextWhite
                 )
             },
             text = {
                 Text(
                     "This will permanently delete all logged WhatsApp sessions and reset all conversation aliases and daily limits. This action cannot be undone.",
-                    color = TextMutedLight
+                    color = TextSubtle
                 )
             },
             confirmButton = {
@@ -462,7 +496,7 @@ fun SettingsScreen(
                     },
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = CoralAccent,
+                        containerColor = CoralAlert,
                         contentColor = Color.White
                     )
                 ) {
@@ -471,7 +505,7 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showClearDataDialog = false }) {
-                    Text("Cancel", color = TextMutedLight)
+                    Text("Cancel", color = TextSubtle)
                 }
             }
         )
@@ -484,29 +518,28 @@ private fun SectionHeader(title: String) {
         text = title,
         fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
-        color = ButterGold,
+        color = AcidLime,
         letterSpacing = 1.sp,
         modifier = Modifier.padding(start = 4.dp)
     )
 }
 
 /**
- * Pastel pill row inside SoftSageListCard.
+ * Clean dark permission row with 42.dp circular CircleBtnDark icon and AcidLime "Grant" pill or Periwinkle/Lime "Active" badge.
  */
 @Composable
-private fun PastelPermissionPillRow(
+private fun DarkPermissionRow(
     title: String,
     description: String,
     icon: ImageVector,
     isGranted: Boolean,
-    backgroundColor: Color,
     onGrantClick: () -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        color = backgroundColor,
-        border = BorderStroke(1.dp, Color(0x12000000))
+        shape = RoundedCornerShape(18.dp),
+        color = CircleBtnDark,
+        border = BorderStroke(1.dp, BorderSubtle)
     ) {
         Row(
             modifier = Modifier
@@ -517,21 +550,21 @@ private fun PastelPermissionPillRow(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.weight(1f)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(34.dp)
+                        .size(42.dp)
                         .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.6f)),
+                        .background(SurfaceCharcoal),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = TextDarkInk
+                        modifier = Modifier.size(20.dp),
+                        tint = if (isGranted) PeriwinkleViolet else AcidLime
                     )
                 }
 
@@ -540,14 +573,15 @@ private fun PastelPermissionPillRow(
                         text = title,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextDarkInk,
+                        color = TextWhite,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    Spacer(modifier = Modifier.height(1.dp))
                     Text(
                         text = description,
                         fontSize = 11.sp,
-                        color = TextMutedDark,
+                        color = TextSubtle,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -558,8 +592,9 @@ private fun PastelPermissionPillRow(
 
             if (isGranted) {
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MintPositiveBadge
+                    shape = RoundedCornerShape(50),
+                    color = PeriwinkleViolet.copy(alpha = 0.16f),
+                    border = BorderStroke(1.dp, PeriwinkleViolet.copy(alpha = 0.35f))
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
@@ -570,30 +605,30 @@ private fun PastelPermissionPillRow(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = "Active",
                             modifier = Modifier.size(13.dp),
-                            tint = Color(0xFF0D2618)
+                            tint = PeriwinkleViolet
                         )
                         Text(
                             text = "Active",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0D2618)
+                            color = PeriwinkleViolet
                         )
                     }
                 }
             } else {
                 Surface(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(50))
                         .clickable(onClick = onGrantClick),
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFF141413)
+                    shape = RoundedCornerShape(50),
+                    color = AcidLime
                 ) {
                     Text(
                         text = "Grant",
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = OnAcidLimeInk
                     )
                 }
             }
@@ -602,7 +637,7 @@ private fun PastelPermissionPillRow(
 }
 
 /**
- * Switch row inside CharcoalBento card.
+ * Feature Switch row inside SurfaceCharcoal card.
  */
 @Composable
 private fun FeatureSwitchRow(
@@ -624,16 +659,16 @@ private fun FeatureSwitchRow(
         ) {
             Box(
                 modifier = Modifier
-                    .size(38.dp)
+                    .size(40.dp)
                     .clip(CircleShape)
-                .background(DarkCircleBtn),
+                    .background(CircleBtnDark),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
-                    tint = ButterGold
+                    tint = AcidLime
                 )
             }
 
@@ -642,12 +677,13 @@ private fun FeatureSwitchRow(
                     text = title,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = TextLight
+                    color = TextWhite
                 )
+                Spacer(modifier = Modifier.height(1.dp))
                 Text(
                     text = description,
                     fontSize = 12.sp,
-                    color = TextMutedLight
+                    color = TextSubtle
                 )
             }
         }
@@ -658,10 +694,10 @@ private fun FeatureSwitchRow(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color(0xFF141413),
-                checkedTrackColor = ButterGold,
-                uncheckedTrackColor = Color(0xFF333336),
-                uncheckedThumbColor = TextMutedLight
+                checkedThumbColor = OnAcidLimeInk,
+                checkedTrackColor = AcidLime,
+                uncheckedTrackColor = BarInactiveCharcoal,
+                uncheckedThumbColor = TextSubtle
             )
         )
     }

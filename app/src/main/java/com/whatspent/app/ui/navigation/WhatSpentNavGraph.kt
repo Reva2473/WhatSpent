@@ -2,24 +2,27 @@ package com.whatspent.app.ui.navigation
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.History
@@ -30,6 +33,7 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -39,9 +43,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -58,6 +63,11 @@ import com.whatspent.app.ui.detail.ChatDetailViewModel
 import com.whatspent.app.ui.onboarding.OnboardingScreen
 import com.whatspent.app.ui.settings.SettingsScreen
 import com.whatspent.app.ui.settings.SettingsViewModel
+import com.whatspent.app.ui.theme.AcidLimeAccent
+import com.whatspent.app.ui.theme.CharcoalBentoSurface
+import com.whatspent.app.ui.theme.ObsidianBackground
+import com.whatspent.app.ui.theme.OnAcidLimeInk
+import com.whatspent.app.ui.theme.SubtleAxisLabelText
 import com.whatspent.app.ui.timeline.TimelineScreen
 import com.whatspent.app.ui.timeline.TimelineViewModel
 import kotlinx.coroutines.launch
@@ -89,12 +99,6 @@ val BottomNavItems = listOf(
     Screen.Settings
 )
 
-// Pitch black and butter-gold navigation colors matching reference design
-private val NavContainerBg = Color(0xFF0B0B0D)
-private val NavActiveGold = Color(0xFFEFE29B)
-private val NavActiveIconInk = Color(0xFF141413)
-private val NavInactiveIconMuted = Color(0xFF9E9B8E)
-
 @Composable
 fun WhatSpentNavGraph(
     repository: WhatSpentRepository,
@@ -116,86 +120,96 @@ fun WhatSpentNavGraph(
 
     val showBottomBar = currentRoute in BottomNavItems.map { it.route }
 
+    // Outer Scaffold with zero insets to prevent double-inset blank spaces with nested screens
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = NavContainerBg,
+        containerColor = ObsidianBackground,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             AnimatedVisibility(
                 visible = showBottomBar,
                 enter = slideInVertically(initialOffsetY = { it }),
                 exit = slideOutVertically(targetOffsetY = { it })
             ) {
-                Surface(
+                // Sleek, ultra-compact dark pill dock container
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .navigationBarsPadding(),
-                    color = NavContainerBg,
-                    tonalElevation = 0.dp
+                        .background(ObsidianBackground)
+                        .navigationBarsPadding()
+                        .padding(horizontal = 24.dp, vertical = 6.dp)
                 ) {
-                    Row(
+                    Surface(
+                        shape = RoundedCornerShape(28.dp),
+                        color = CharcoalBentoSurface,
+                        border = BorderStroke(1.dp, Color(0xFF25252A)),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(76.dp)
-                            .padding(horizontal = 28.dp),
-                        horizontalArrangement = Arrangement.SpaceAround,
-                        verticalAlignment = Alignment.CenterVertically
+                            .height(54.dp)
                     ) {
-                        BottomNavItems.forEach { screen ->
-                            val isSelected = currentRoute == screen.route
-                            val animatedScale by animateFloatAsState(
-                                targetValue = if (isSelected) 1.0f else 0.92f,
-                                animationSpec = spring(
-                                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                                    stiffness = Spring.StiffnessMediumLow
-                                ),
-                                label = "navItemScale_${screen.route}"
-                            )
-                            val iconColor by animateColorAsState(
-                                targetValue = if (isSelected) NavActiveIconInk else NavInactiveIconMuted,
-                                label = "navItemColor_${screen.route}"
-                            )
-
-                            Box(
-                                modifier = Modifier
-                                    .size(52.dp)
-                                    .graphicsLayer {
-                                        scaleX = animatedScale
-                                        scaleY = animatedScale
-                                    }
-                                    .clip(CircleShape)
-                                    .then(
-                                        if (isSelected) {
-                                            Modifier.background(NavActiveGold)
-                                        } else {
-                                            Modifier
-                                        }
-                                    )
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null
-                                    ) {
-                                        if (currentRoute != screen.route) {
-                                            navController.navigate(screen.route) {
-                                                popUpTo(navController.graph.findStartDestination().id) {
-                                                    saveState = true
-                                                }
-                                                launchSingleTop = true
-                                                restoreState = true
-                                            }
-                                        }
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = if (isSelected) {
-                                        screen.selectedIcon ?: Icons.Filled.Dashboard
-                                    } else {
-                                        screen.unselectedIcon ?: Icons.Outlined.Dashboard
-                                    },
-                                    contentDescription = screen.title,
-                                    modifier = Modifier.size(24.dp),
-                                    tint = iconColor
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            BottomNavItems.forEach { screen ->
+                                val isSelected = currentRoute == screen.route
+                                val animatedBgColor by animateColorAsState(
+                                    targetValue = if (isSelected) AcidLimeAccent else Color.Transparent,
+                                    label = "navTabBg_${screen.route}"
                                 )
+                                val contentColor by animateColorAsState(
+                                    targetValue = if (isSelected) OnAcidLimeInk else SubtleAxisLabelText,
+                                    label = "navTabContent_${screen.route}"
+                                )
+
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight()
+                                        .clip(RoundedCornerShape(24.dp))
+                                        .background(animatedBgColor)
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null
+                                        ) {
+                                            if (currentRoute != screen.route) {
+                                                navController.navigate(screen.route) {
+                                                    popUpTo(navController.graph.findStartDestination().id) {
+                                                        saveState = true
+                                                    }
+                                                    launchSingleTop = true
+                                                    restoreState = true
+                                                }
+                                            }
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isSelected) {
+                                                screen.selectedIcon ?: Icons.Filled.Dashboard
+                                            } else {
+                                                screen.unselectedIcon ?: Icons.Outlined.Dashboard
+                                            },
+                                            contentDescription = screen.title,
+                                            modifier = Modifier.size(18.dp),
+                                            tint = contentColor
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = screen.title,
+                                            fontSize = 13.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                            color = contentColor
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -203,10 +217,13 @@ fun WhatSpentNavGraph(
             }
         }
     ) { innerPadding ->
+        // Content starts flush right below status bar clock/battery icons with zero wasted gap
         NavHost(
             navController = navController,
             startDestination = startDestination,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier
+                .padding(innerPadding)
+                .statusBarsPadding()
         ) {
             // Dashboard
             composable(Screen.Dashboard.route) {

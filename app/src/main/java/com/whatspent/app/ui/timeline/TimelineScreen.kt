@@ -17,20 +17,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -40,36 +36,27 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.whatspent.app.data.model.TimelineSessionItem
-import com.whatspent.app.data.model.formatDuration
 import com.whatspent.app.ui.theme.getChatColor
 import com.whatspent.app.util.TimeFormatUtils
 
-// Explicit Design System Palette
+// Sleek Obsidian & Neon Acid-Lime Design Tokens
 private val ObsidianBg = Color(0xFF0B0B0D)
-private val CharcoalBento = Color(0xFF1F1F21)
-private val DarkCircleBtn = Color(0xFF262522)
-private val ButterGold = Color(0xFFEFE29B)
-private val SageMintCard = Color(0xFFBCE0D0)
-private val WarmSandCard = Color(0xFFC9BA9B)
-private val SoftOliveCard = Color(0xFFCED2BE)
-private val SoftSageListCard = Color(0xFFCBD1C4)
-private val PastelPills = listOf(
-    Color(0xFFDCE2F9), // Lavender
-    Color(0xFFCBEAF6), // Sky
-    Color(0xFFC6F0DC), // Mint
-    Color(0xFFF7F2CD)  // Cream
-)
-private val MintPositiveBadge = Color(0xFF8BE8B9)
-private val CoralAccent = Color(0xFFFF6464)
-private val TextDarkInk = Color(0xFF121413)
-private val TextMutedDark = Color(0xFF4A4D4A)
-private val TextLight = Color(0xFFF5F5F7)
-private val TextMutedLight = Color(0xFF9E9B8E)
+private val SurfaceCharcoal = Color(0xFF17171A)
+private val CircleBtnDark = Color(0xFF1C1C20)
+private val BarInactiveCharcoal = Color(0xFF222227)
+private val BorderSubtle = Color(0xFF28282D)
+private val AcidLime = Color(0xFFE5FA6B)
+private val OnAcidLimeInk = Color(0xFF0E0F0A)
+private val PeriwinkleViolet = Color(0xFF9F8FEF)
+private val TextWhite = Color(0xFFF6F6F9)
+private val TextMutedUnit = Color(0xFF6E6E77)
+private val TextSubtle = Color(0xFF8A8A93)
+private val CoralAlert = Color(0xFFFF6B6B)
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimelineScreen(
     selectedDate: String,
@@ -82,182 +69,211 @@ fun TimelineScreen(
     val totalDateDurationMs = remember(sessions) { sessions.sumOf { it.durationMs } }
     val sessionCount = sessions.size
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = ObsidianBg,
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "Timeline",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextLight,
-                        letterSpacing = (-0.3).sp
-                    )
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = ObsidianBg
-                )
-            )
-        }
-    ) { innerPadding ->
-        Column(
+    // Root container eliminating top & bottom empty spaces (no Scaffold / TopAppBar)
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(ObsidianBg)
+    ) {
+        // Compact Custom Header Row (height 44.dp)
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 4.dp)
+                .height(44.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Horizontal Date Strip with Butter-Gold Active Pill
-            LazyRow(
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 6.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(CircleBtnDark),
+                contentAlignment = Alignment.Center
             ) {
-                itemsIndexed(availableDates) { index, date ->
-                    val isSelected = date == selectedDate
-                    val label = when (date) {
-                        TimeFormatUtils.todayDateString() -> "Today"
-                        TimeFormatUtils.yesterdayDateString() -> "Yesterday"
-                        else -> TimeFormatUtils.formatReadableDate(date)
-                    }
+                Icon(
+                    imageVector = Icons.Default.CalendarToday,
+                    contentDescription = "Calendar",
+                    tint = TextSubtle,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
 
+            Text(
+                text = "Timeline",
+                fontSize = 19.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = TextWhite,
+                letterSpacing = (-0.3).sp
+            )
+
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(CircleBtnDark),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Schedule,
+                    contentDescription = "Sessions",
+                    tint = TextSubtle,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+
+        // Horizontal Date Pill Strip
+        LazyRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            contentPadding = PaddingValues(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            itemsIndexed(availableDates) { _, date ->
+                val isSelected = date == selectedDate
+                val label = when (date) {
+                    TimeFormatUtils.todayDateString() -> "Today"
+                    TimeFormatUtils.yesterdayDateString() -> "Yesterday"
+                    else -> TimeFormatUtils.formatReadableDate(date)
+                }
+
+                Surface(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .clickable { onSelectDate(date) },
+                    shape = RoundedCornerShape(50),
+                    color = if (isSelected) AcidLime else SurfaceCharcoal,
+                    border = if (!isSelected) BorderStroke(1.dp, BorderSubtle) else null
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = label,
+                            fontSize = 13.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) OnAcidLimeInk else TextSubtle
+                        )
+                    }
+                }
+            }
+        }
+
+        // Main Content List
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Daily Summary Hero Section
+            item(key = "daily_summary_hero") {
+                DailySummaryHeroCard(
+                    date = selectedDate,
+                    totalDurationMs = totalDateDurationMs,
+                    sessionCount = sessionCount
+                )
+            }
+
+            // Chronological Section Header
+            item(key = "chronological_header") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "CHRONOLOGICAL SESSIONS",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextSubtle,
+                        letterSpacing = 1.2.sp
+                    )
+                    if (sessionCount > 0) {
+                        Text(
+                            text = "$sessionCount recorded",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = TextSubtle
+                        )
+                    }
+                }
+            }
+
+            // Session List Items or Empty State
+            if (sessions.isEmpty()) {
+                item(key = "empty_sessions") {
                     Surface(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .clickable { onSelectDate(date) },
-                        shape = RoundedCornerShape(20.dp),
-                        color = if (isSelected) ButterGold else CharcoalBento,
-                        border = if (!isSelected) BorderStroke(1.dp, Color(0x1AFFFFFF)) else null
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Text(
-                                text = label,
-                                fontSize = 13.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) Color(0xFF141413) else TextMutedLight
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Daily Summary Hero Card (SageMintCard squircle)
-            DailySummaryHeroCard(
-                date = selectedDate,
-                totalDurationMs = totalDateDurationMs,
-                sessionCount = sessionCount,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-
-            // Section Header
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "CHRONOLOGICAL SESSIONS",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextMutedLight,
-                    letterSpacing = 1.2.sp
-                )
-                if (sessionCount > 0) {
-                    Text(
-                        text = "$sessionCount recorded",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = TextMutedLight
-                    )
-                }
-            }
-
-            // Chronological Session List
-            if (sessions.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(28.dp),
-                        color = CharcoalBento,
-                        border = BorderStroke(1.dp, Color(0x1FFFFFFF))
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        color = SurfaceCharcoal,
+                        border = BorderStroke(1.dp, BorderSubtle)
                     ) {
                         Column(
-                            modifier = Modifier.padding(32.dp),
+                            modifier = Modifier.padding(28.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(54.dp)
+                                    .size(52.dp)
                                     .clip(CircleShape)
-                                    .background(DarkCircleBtn),
+                                    .background(CircleBtnDark),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.History,
                                     contentDescription = null,
-                                    modifier = Modifier.size(26.dp),
-                                    tint = ButterGold
+                                    modifier = Modifier.size(24.dp),
+                                    tint = AcidLime
                                 )
                             }
-                            Spacer(modifier = Modifier.height(14.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
                             Text(
                                 text = "No Sessions Recorded",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = TextLight
+                                color = TextWhite
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "No conversation activity was tracked on this date.",
                                 fontSize = 13.sp,
-                                color = TextMutedLight,
+                                color = TextSubtle,
                                 textAlign = TextAlign.Center
                             )
                         }
                     }
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    itemsIndexed(
-                        items = sessions,
-                        key = { _, item -> item.id }
-                    ) { index, item ->
-                        PastelSessionPill(
-                            item = item,
-                            backgroundColor = PastelPills[index % PastelPills.size],
-                            onClick = { onNavigateToChatDetail(item.chatName) }
-                        )
-                    }
-
-                    item {
-                        Spacer(modifier = Modifier.height(32.dp))
-                    }
+                itemsIndexed(
+                    items = sessions,
+                    key = { _, item -> item.id }
+                ) { _, item ->
+                    DarkTimelineSessionRow(
+                        item = item,
+                        onClick = { onNavigateToChatDetail(item.chatName) }
+                    )
                 }
+            }
+
+            item(key = "bottom_spacer") {
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
 }
 
 /**
- * 32.dp squircle Hero Card styled with SageMintCard and dark ink typography.
+ * Elevated Dark Daily Summary Hero Card with two-tone giant duration and Periwinkle/Lime pill.
  */
 @Composable
 private fun DailySummaryHeroCard(
@@ -268,13 +284,14 @@ private fun DailySummaryHeroCard(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        color = SageMintCard
+        shape = RoundedCornerShape(24.dp),
+        color = SurfaceCharcoal,
+        border = BorderStroke(1.dp, BorderSubtle)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(22.dp)
+                .padding(20.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -286,40 +303,39 @@ private fun DailySummaryHeroCard(
                         text = "TOTAL TIME ON DAY",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextMutedDark,
+                        color = TextSubtle,
                         letterSpacing = 1.sp
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = formatDuration(totalDurationMs),
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = TextDarkInk,
-                        letterSpacing = (-0.5).sp
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TwoToneDuration(
+                        durationMs = totalDurationMs,
+                        primarySize = 36.sp,
+                        secondarySize = 22.sp
                     )
                 }
 
-                // Session Count Pill Badge in #E8FCE2
+                // Session Count Pill Badge in Periwinkle Violet
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color(0xFFE8FCE2)
+                    shape = RoundedCornerShape(50),
+                    color = PeriwinkleViolet.copy(alpha = 0.16f),
+                    border = BorderStroke(1.dp, PeriwinkleViolet.copy(alpha = 0.35f))
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Schedule,
                             contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = TextDarkInk
+                            modifier = Modifier.size(13.dp),
+                            tint = PeriwinkleViolet
                         )
                         Text(
                             text = "$sessionCount ${if (sessionCount == 1) "session" else "sessions"}",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextDarkInk
+                            color = PeriwinkleViolet
                         )
                     }
                 }
@@ -331,19 +347,21 @@ private fun DailySummaryHeroCard(
                 text = TimeFormatUtils.formatReadableDate(date),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
-                color = TextMutedDark
+                color = TextSubtle
             )
         }
     }
 }
 
 /**
- * Horizontal pastel pill session row with dark ink text and crisp white duration badge.
+ * Chronological Session Row matching the bottom list of the reference image.
+ * 44.dp circular CircleBtnDark on the left with a colored dot/icon,
+ * chat displayName in 16.sp SemiBold TextWhite and time range in 12.sp TextSubtle,
+ * crisp two-tone duration display on the right.
  */
 @Composable
-private fun PastelSessionPill(
+private fun DarkTimelineSessionRow(
     item: TimelineSessionItem,
-    backgroundColor: Color,
     onClick: () -> Unit
 ) {
     val chatColor = getChatColor(item.chatName, item.colorTag)
@@ -352,16 +370,16 @@ private fun PastelSessionPill(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(20.dp))
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(24.dp),
-        color = backgroundColor,
-        border = BorderStroke(1.dp, Color(0x12000000))
+        shape = RoundedCornerShape(20.dp),
+        color = SurfaceCharcoal,
+        border = BorderStroke(1.dp, BorderSubtle)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -370,12 +388,12 @@ private fun PastelSessionPill(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.weight(1f)
             ) {
-                // Colored ring dot indicator
+                // 44.dp circular icon circle
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(44.dp)
                         .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.6f)),
+                        .background(CircleBtnDark),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
@@ -389,9 +407,9 @@ private fun PastelSessionPill(
                 Column {
                     Text(
                         text = item.displayName,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF141615),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextWhite,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -400,25 +418,152 @@ private fun PastelSessionPill(
                         text = timeRangeStr,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Normal,
-                        color = Color(0xFF4A4E4B)
+                        color = TextSubtle
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(8.dp))
 
-            // Crisp white right-hand value badge
+            // Crisp two-tone duration display on the right
             Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = Color.White,
-                shadowElevation = 0.dp
+                shape = RoundedCornerShape(12.dp),
+                color = CircleBtnDark,
+                border = BorderStroke(1.dp, BorderSubtle)
             ) {
+                Box(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                    TwoToneShortDuration(durationMs = item.durationMs)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Two-tone giant duration display: primary number in TextWhite + secondary unit in TextMutedUnit.
+ */
+@Composable
+private fun TwoToneDuration(
+    durationMs: Long,
+    modifier: Modifier = Modifier,
+    primarySize: TextUnit = 36.sp,
+    secondarySize: TextUnit = 22.sp,
+    primaryColor: Color = TextWhite,
+    secondaryColor: Color = TextMutedUnit
+) {
+    val totalSeconds = (durationMs / 1000).coerceAtLeast(0L)
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        when {
+            hours > 0 -> {
                 Text(
-                    text = TimeFormatUtils.formatDurationShort(item.durationMs),
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    text = "${hours}h",
+                    fontSize = primarySize,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = primaryColor,
+                    letterSpacing = (-0.5).sp
+                )
+                Text(
+                    text = "${minutes}m",
+                    fontSize = secondarySize,
+                    fontWeight = FontWeight.Bold,
+                    color = secondaryColor,
+                    modifier = Modifier.padding(bottom = 2.dp)
+                )
+            }
+            minutes > 0 -> {
+                Text(
+                    text = "${minutes}m",
+                    fontSize = primarySize,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = primaryColor,
+                    letterSpacing = (-0.5).sp
+                )
+                if (seconds > 0) {
+                    Text(
+                        text = "${seconds}s",
+                        fontSize = secondarySize,
+                        fontWeight = FontWeight.Bold,
+                        color = secondaryColor,
+                        modifier = Modifier.padding(bottom = 2.dp)
+                    )
+                }
+            }
+            else -> {
+                Text(
+                    text = "${seconds}s",
+                    fontSize = primarySize,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = primaryColor,
+                    letterSpacing = (-0.5).sp
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Two-tone compact short duration display.
+ */
+@Composable
+private fun TwoToneShortDuration(
+    durationMs: Long,
+    modifier: Modifier = Modifier
+) {
+    val totalSeconds = (durationMs / 1000).coerceAtLeast(0L)
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        when {
+            hours > 0 -> {
+                Text(
+                    text = "${hours}h",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF141615)
+                    color = TextWhite
+                )
+                Text(
+                    text = "${minutes}m",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = TextMutedUnit
+                )
+            }
+            minutes > 0 -> {
+                Text(
+                    text = "${minutes}m",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextWhite
+                )
+                if (seconds > 0) {
+                    Text(
+                        text = "${seconds}s",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = TextMutedUnit
+                    )
+                }
+            }
+            else -> {
+                Text(
+                    text = "${seconds}s",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextWhite
                 )
             }
         }

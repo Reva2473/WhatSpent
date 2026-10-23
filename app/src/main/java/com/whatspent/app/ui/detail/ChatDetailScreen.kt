@@ -26,19 +26,15 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.HourglassBottom
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -46,7 +42,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -59,9 +54,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.whatspent.app.data.model.ChatDetailUiState
@@ -72,23 +68,20 @@ import com.whatspent.app.ui.theme.ChatChartPalette
 import com.whatspent.app.ui.theme.getChatColor
 import kotlin.math.roundToInt
 
-// Explicit Design System Palette
+// Sleek Obsidian & Neon Acid-Lime Design Tokens
 private val ObsidianBg = Color(0xFF0B0B0D)
-private val CharcoalBento = Color(0xFF1F1F21)
-private val DarkCircleBtn = Color(0xFF262522)
-private val ButterGold = Color(0xFFEFE29B)
-private val SageMintCard = Color(0xFFBCE0D0)
-private val WarmSandCard = Color(0xFFC9BA9B)
-private val SoftOliveCard = Color(0xFFCED2BE)
-private val SoftSageListCard = Color(0xFFCBD1C4)
-private val MintPositiveBadge = Color(0xFF8BE8B9)
-private val CoralAccent = Color(0xFFFF6464)
-private val TextDarkInk = Color(0xFF121413)
-private val TextMutedDark = Color(0xFF4A4D4A)
-private val TextLight = Color(0xFFF5F5F7)
-private val TextMutedLight = Color(0xFF9E9B8E)
+private val SurfaceCharcoal = Color(0xFF17171A)
+private val CircleBtnDark = Color(0xFF1C1C20)
+private val BarInactiveCharcoal = Color(0xFF222227)
+private val BorderSubtle = Color(0xFF28282D)
+private val AcidLime = Color(0xFFE5FA6B)
+private val OnAcidLimeInk = Color(0xFF0E0F0A)
+private val PeriwinkleViolet = Color(0xFF9F8FEF)
+private val TextWhite = Color(0xFFF6F6F9)
+private val TextMutedUnit = Color(0xFF6E6E77)
+private val TextSubtle = Color(0xFF8A8A93)
+private val CoralAlert = Color(0xFFFF6B6B)
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatDetailScreen(
     uiState: ChatDetailUiState,
@@ -103,147 +96,151 @@ fun ChatDetailScreen(
     val chatColor = getChatColor(uiState.chatName, uiState.colorTag)
     var showAliasDialog by remember { mutableStateOf(false) }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = ObsidianBg,
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = uiState.displayName,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextLight,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        if (uiState.customAlias != null && uiState.customAlias != uiState.chatName) {
-                            Text(
-                                text = uiState.chatName,
-                                fontSize = 11.sp,
-                                color = TextMutedLight,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                },
-                navigationIcon = {
-                    Box(
-                        modifier = Modifier
-                            .padding(start = 12.dp)
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(DarkCircleBtn)
-                            .clickable(onClick = onBackClick),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color(0xFFD9D2B0),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                },
-                actions = {
-                    Box(
-                        modifier = Modifier
-                            .padding(end = 12.dp)
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(ButterGold)
-                            .clickable(onClick = { showAliasDialog = true }),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit Custom Alias",
-                            tint = Color(0xFF141413),
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = ObsidianBg
+    // Root layout eliminating top/bottom empty space (no Scaffold / TopAppBar)
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(ObsidianBg)
+    ) {
+        // Compact Custom Header Row (height 44.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 4.dp)
+                .height(44.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Left 40.dp circular icon button (Back arrow)
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(CircleBtnDark)
+                    .clickable(onClick = onBackClick),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = TextWhite,
+                    modifier = Modifier.size(19.dp)
                 )
-            )
+            }
+
+            // Centered display name & optional original chat name
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.weight(1f).padding(horizontal = 12.dp)
+            ) {
+                Text(
+                    text = uiState.displayName,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextWhite,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (uiState.customAlias != null && uiState.customAlias != uiState.chatName) {
+                    Text(
+                        text = uiState.chatName,
+                        fontSize = 11.sp,
+                        color = TextSubtle,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            // Right 40.dp circular icon button (Edit Alias)
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(CircleBtnDark)
+                    .clickable(onClick = { showAliasDialog = true }),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Edit Custom Alias",
+                    tint = AcidLime,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
         }
-    ) { innerPadding ->
+
+        // Scrollable Screen Content
         LazyColumn(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .fillMaxWidth()
+                .weight(1f),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // 1. Numbered Circular Badge Range Selector Strip
-            item(key = "range_selector") {
-                NumberedRangeSelectorStrip(
+            // 1. Segmented Range Pill Bar (Today, 7 Days, 30 Days)
+            item(key = "range_pill_bar") {
+                SegmentedRangePillBar(
                     selectedRange = uiState.selectedRange,
                     onSelectRange = onSelectRange
                 )
             }
 
-            // 2. Hero Summary Card in SageMintCard (32.dp corners)
-            item(key = "hero_summary_card") {
-                HeroSummaryCard(
+            // 2. Hero Two-Tone Total Duration Card
+            item(key = "hero_duration_card") {
+                HeroTotalDurationCard(
                     rangeLabel = uiState.selectedRange.label,
-                    totalDuration = uiState.formattedTotalDuration,
+                    totalDurationMs = uiState.totalDurationInRangeMs,
                     sessionCount = uiState.sessionCountInRange,
                     chatColor = chatColor
                 )
             }
 
-            // 3. Twin Metric Bento Cards (Average Session & Longest Session)
+            // 3. Twin Dark Metric Cards (Average Session & Longest Session)
             item(key = "twin_metrics") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    TwinMetricBentoCard(
+                    TwinDarkMetricCard(
                         title = "Average Session",
-                        value = uiState.formattedAverageSession,
+                        durationMs = uiState.averageSessionMs,
                         badgeLabel = "Avg",
-                        badgeColor = MintPositiveBadge,
-                        badgeTextColor = Color(0xFF0D2618),
+                        accentColor = PeriwinkleViolet,
                         icon = Icons.Default.Timer,
                         modifier = Modifier.weight(1f)
                     )
-                    TwinMetricBentoCard(
+                    TwinDarkMetricCard(
                         title = "Longest Session",
-                        value = uiState.formattedLongestSession,
+                        durationMs = uiState.longestSessionMs,
                         badgeLabel = "Peak",
-                        badgeColor = CoralAccent,
-                        badgeTextColor = Color.White,
+                        accentColor = AcidLime,
                         icon = Icons.Default.HourglassBottom,
                         modifier = Modifier.weight(1f)
                     )
                 }
             }
 
-            // 4. Historical Usage Chart Card in WarmSandCard (32.dp corners)
-            item(key = "historical_chart") {
-                WarmSandChartCard(
+            // 4. Historical Usage Chart Card
+            item(key = "usage_chart_card") {
+                HistoricalUsageChartCard(
                     points = uiState.dailyPoints,
-                    rangeLabel = uiState.selectedRange.label,
-                    highlightColor = chatColor
+                    rangeLabel = uiState.selectedRange.label
                 )
             }
 
-            // 5. Daily Usage Limit Card in SoftOliveCard (32.dp corners)
+            // 5. Daily Screen Time Limit Card
             item(key = "daily_limit_card") {
-                SoftOliveLimitCard(
+                DailyScreenTimeLimitCard(
                     dailyLimitMinutes = uiState.dailyLimitMinutes,
                     todayDurationMs = uiState.todayDurationMs,
                     onUpdateLimit = onUpdateDailyLimit
                 )
             }
 
-            // 6. Customization & Privacy Card in CharcoalBento (28.dp corners)
-            item(key = "customization_card") {
-                CustomizationBentoCard(
+            // 6. Customization & Privacy Card
+            item(key = "customization_privacy_card") {
+                CustomizationPrivacyCard(
                     customAlias = uiState.customAlias,
                     colorTag = uiState.colorTag,
                     isExcluded = uiState.isExcluded,
@@ -253,15 +250,16 @@ fun ChatDetailScreen(
                 )
             }
 
-            item {
-                Spacer(modifier = Modifier.height(28.dp))
+            // Minimal bottom spacing
+            item(key = "bottom_spacer") {
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
 
     // Custom Alias Edit Dialog
     if (showAliasDialog) {
-        CustomAliasDialog(
+        DarkCustomAliasDialog(
             currentAlias = uiState.customAlias ?: "",
             chatName = uiState.chatName,
             onDismiss = { showAliasDialog = false },
@@ -274,59 +272,47 @@ fun ChatDetailScreen(
 }
 
 /**
- * Numbered circular badge strip: (01 Today, 02 7 Days, 03 30 Days)
+ * Segmented Range Pill Bar styled like [1d  1w  1m  6m  1y] from reference image.
+ * A SurfaceCharcoal container with active pill in AcidLime.
  */
 @Composable
-private fun NumberedRangeSelectorStrip(
+private fun SegmentedRangePillBar(
     selectedRange: DetailRange,
     onSelectRange: (DetailRange) -> Unit
 ) {
-    Row(
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        shape = RoundedCornerShape(24.dp),
+        color = SurfaceCharcoal,
+        border = BorderStroke(1.dp, BorderSubtle)
     ) {
-        DetailRange.values().forEachIndexed { index, range ->
-            val isSelected = range == selectedRange
-            val numberStr = String.format("%02d", index + 1)
-
-            Surface(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(22.dp))
-                    .clickable { onSelectRange(range) },
-                shape = RoundedCornerShape(22.dp),
-                color = if (isSelected) ButterGold else CharcoalBento,
-                border = if (!isSelected) BorderStroke(1.dp, Color(0x1FFFFFFF)) else null
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            DetailRange.values().forEach { range ->
+                val isSelected = range == selectedRange
+                Surface(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(20.dp))
+                        .clickable { onSelectRange(range) },
+                    shape = RoundedCornerShape(20.dp),
+                    color = if (isSelected) AcidLime else Color.Transparent
                 ) {
-                    // Small circular badge
                     Box(
-                        modifier = Modifier
-                            .size(20.dp)
-                            .clip(CircleShape)
-                            .background(if (isSelected) Color(0xFF141413) else Color(0xFF2E2E32)),
+                        modifier = Modifier.padding(vertical = 9.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = numberStr,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isSelected) ButterGold else TextMutedLight
+                            text = range.label,
+                            fontSize = 12.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) OnAcidLimeInk else TextSubtle
                         )
                     }
-
-                    Spacer(modifier = Modifier.width(6.dp))
-
-                    Text(
-                        text = range.label,
-                        fontSize = 12.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) Color(0xFF141413) else TextMutedLight
-                    )
                 }
             }
         }
@@ -334,24 +320,25 @@ private fun NumberedRangeSelectorStrip(
 }
 
 /**
- * Hero summary card in SageMintCard (32.dp squircle corners).
+ * Hero Total Duration Card in SurfaceCharcoal with two-tone giant duration display.
  */
 @Composable
-private fun HeroSummaryCard(
+private fun HeroTotalDurationCard(
     rangeLabel: String,
-    totalDuration: String,
+    totalDurationMs: Long,
     sessionCount: Int,
     chatColor: Color
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        color = SageMintCard
+        shape = RoundedCornerShape(24.dp),
+        color = SurfaceCharcoal,
+        border = BorderStroke(1.dp, BorderSubtle)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(22.dp)
+                .padding(20.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -363,40 +350,39 @@ private fun HeroSummaryCard(
                         text = "TOTAL SCREEN TIME (${rangeLabel.uppercase()})",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextMutedDark,
+                        color = TextSubtle,
                         letterSpacing = 1.sp
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = totalDuration,
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = TextDarkInk,
-                        letterSpacing = (-0.5).sp
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TwoToneDuration(
+                        durationMs = totalDurationMs,
+                        primarySize = 36.sp,
+                        secondarySize = 22.sp
                     )
                 }
 
-                // Session Count Pill Badge in #E8FCE2
+                // Session Count Pill Badge in Periwinkle Violet
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color(0xFFE8FCE2)
+                    shape = RoundedCornerShape(50),
+                    color = PeriwinkleViolet.copy(alpha = 0.16f),
+                    border = BorderStroke(1.dp, PeriwinkleViolet.copy(alpha = 0.35f))
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Timeline,
                             contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = TextDarkInk
+                            modifier = Modifier.size(13.dp),
+                            tint = PeriwinkleViolet
                         )
                         Text(
                             text = "$sessionCount ${if (sessionCount == 1) "session" else "sessions"}",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextDarkInk
+                            color = PeriwinkleViolet
                         )
                     }
                 }
@@ -417,7 +403,7 @@ private fun HeroSummaryCard(
                 Text(
                     text = "Conversation focus & screen duration",
                     fontSize = 12.sp,
-                    color = TextMutedDark,
+                    color = TextSubtle,
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -426,23 +412,96 @@ private fun HeroSummaryCard(
 }
 
 /**
- * Twin metric card in CharcoalBento (26.dp corners).
+ * Twin Metric Bento Card in SurfaceCharcoal with two-tone duration.
  */
 @Composable
-private fun TwinMetricBentoCard(
+private fun TwinDarkMetricCard(
     title: String,
-    value: String,
+    durationMs: Long,
     badgeLabel: String,
-    badgeColor: Color,
-    badgeTextColor: Color,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    accentColor: Color,
+    icon: ImageVector,
     modifier: Modifier = Modifier
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(26.dp),
-        color = CharcoalBento,
-        border = BorderStroke(1.dp, Color(0x1AFFFFFF))
+        shape = RoundedCornerShape(20.dp),
+        color = SurfaceCharcoal,
+        border = BorderStroke(1.dp, BorderSubtle)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(CircleBtnDark),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = accentColor
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = accentColor.copy(alpha = 0.16f),
+                    border = BorderStroke(1.dp, accentColor.copy(alpha = 0.35f))
+                ) {
+                    Text(
+                        text = badgeLabel,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = accentColor
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            TwoToneDuration(
+                durationMs = durationMs,
+                primarySize = 22.sp,
+                secondarySize = 14.sp
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = title,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = TextSubtle
+            )
+        }
+    }
+}
+
+/**
+ * Historical Usage Chart Card in SurfaceCharcoal calling SevenDayUsageBarChart with PeriwinkleViolet.
+ */
+@Composable
+private fun HistoricalUsageChartCard(
+    points: List<com.whatspent.app.data.model.DailyUsagePoint>,
+    rangeLabel: String
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = SurfaceCharcoal,
+        border = BorderStroke(1.dp, BorderSubtle)
     ) {
         Column(
             modifier = Modifier
@@ -454,122 +513,50 @@ private fun TwinMetricBentoCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(34.dp)
-                        .clip(CircleShape)
-                        .background(DarkCircleBtn),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = badgeColor
-                    )
-                }
-
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = badgeColor.copy(alpha = 0.2f)
-                ) {
-                    Text(
-                        text = badgeLabel,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = badgeColor
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Text(
-                text = value,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = TextLight,
-                letterSpacing = (-0.3).sp
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = title,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                color = TextMutedLight
-            )
-        }
-    }
-}
-
-/**
- * Historical Usage Chart Card in WarmSandCard (32.dp squircle corners).
- */
-@Composable
-private fun WarmSandChartCard(
-    points: List<com.whatspent.app.data.model.DailyUsagePoint>,
-    rangeLabel: String,
-    highlightColor: Color
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        color = WarmSandCard
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
                 Column {
                     Text(
                         text = "Usage Trend",
-                        fontSize = 17.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextDarkInk
+                        color = TextWhite
                     )
                     Text(
                         text = "Daily conversation duration ($rangeLabel)",
                         fontSize = 12.sp,
-                        color = TextMutedDark
+                        color = TextSubtle
                     )
                 }
 
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = Color.White.copy(alpha = 0.4f)
+                    color = CircleBtnDark,
+                    border = BorderStroke(1.dp, BorderSubtle)
                 ) {
                     Text(
                         text = "Daily",
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextDarkInk
+                        color = TextSubtle
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             SevenDayUsageBarChart(
                 points = points,
-                highlightColor = Color(0xFF141413)
+                highlightColor = PeriwinkleViolet
             )
         }
     }
 }
 
 /**
- * Daily Usage Limit Card in SoftOliveCard (32.dp squircle corners).
+ * Daily Screen Time Limit Card with PeriwinkleViolet/AcidLime slider and preset pills.
  */
 @Composable
-private fun SoftOliveLimitCard(
+private fun DailyScreenTimeLimitCard(
     dailyLimitMinutes: Int?,
     todayDurationMs: Long,
     onUpdateLimit: (Int?) -> Unit
@@ -582,13 +569,14 @@ private fun SoftOliveLimitCard(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        color = SoftOliveCard
+        shape = RoundedCornerShape(24.dp),
+        color = SurfaceCharcoal,
+        border = BorderStroke(1.dp, BorderSubtle)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp)
+                .padding(18.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -598,14 +586,14 @@ private fun SoftOliveLimitCard(
                 Column {
                     Text(
                         text = "Daily Screen Time Budget",
-                        fontSize = 17.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextDarkInk
+                        color = TextWhite
                     )
                     Text(
                         text = if (currentLimit > 0) "$currentLimit minutes per day" else "No daily limit set (Off)",
                         fontSize = 12.sp,
-                        color = if (isOverLimit) CoralAccent else TextMutedDark,
+                        color = if (isOverLimit) CoralAlert else TextSubtle,
                         fontWeight = if (isOverLimit) FontWeight.Bold else FontWeight.Normal
                     )
                 }
@@ -613,14 +601,14 @@ private fun SoftOliveLimitCard(
                 if (currentLimit > 0) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = if (isOverLimit) CoralAccent else Color.White
+                        color = if (isOverLimit) CoralAlert else AcidLime
                     ) {
                         Text(
                             text = if (isOverLimit) "Exceeded" else "${(progress * 100).toInt()}%",
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isOverLimit) Color.White else TextDarkInk
+                            color = if (isOverLimit) Color.White else OnAcidLimeInk
                         )
                     }
                 }
@@ -634,21 +622,21 @@ private fun SoftOliveLimitCard(
                         .fillMaxWidth()
                         .height(8.dp)
                         .clip(RoundedCornerShape(4.dp)),
-                    color = if (isOverLimit) CoralAccent else TextDarkInk,
-                    trackColor = Color(0x33000000),
+                    color = if (isOverLimit) CoralAlert else AcidLime,
+                    trackColor = BarInactiveCharcoal,
                     strokeCap = StrokeCap.Round
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = "Today: ${formatDuration(todayDurationMs)} of ${currentLimit}m limit",
                     fontSize = 12.sp,
-                    color = TextMutedDark
+                    color = TextSubtle
                 )
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Slider with dark ink track/thumb
+            // Slider with PeriwinkleViolet thumb and track
             Slider(
                 value = sliderValue,
                 onValueChange = { sliderValue = (it / 5).roundToInt() * 5f },
@@ -659,13 +647,13 @@ private fun SoftOliveLimitCard(
                 valueRange = 0f..180f,
                 steps = 35,
                 colors = SliderDefaults.colors(
-                    thumbColor = TextDarkInk,
-                    activeTrackColor = TextDarkInk,
-                    inactiveTrackColor = Color(0x33141413)
+                    thumbColor = PeriwinkleViolet,
+                    activeTrackColor = PeriwinkleViolet,
+                    inactiveTrackColor = BarInactiveCharcoal
                 )
             )
 
-            // Crisp white / butter-gold preset pills
+            // Preset pills: Off, 15m, 30m, 45m, 60m, 90m, 120m
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -690,15 +678,15 @@ private fun SoftOliveLimitCard(
                                 onUpdateLimit(if (minutes == 0) null else minutes)
                             },
                         shape = RoundedCornerShape(16.dp),
-                        color = if (isSelected) ButterGold else Color.White.copy(alpha = 0.55f),
-                        border = if (isSelected) BorderStroke(1.5.dp, TextDarkInk) else null
+                        color = if (isSelected) AcidLime else CircleBtnDark,
+                        border = if (!isSelected) BorderStroke(1.dp, BorderSubtle) else null
                     ) {
                         Text(
                             text = label,
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
                             fontSize = 12.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = TextDarkInk
+                            color = if (isSelected) OnAcidLimeInk else TextWhite
                         )
                     }
                 }
@@ -708,10 +696,10 @@ private fun SoftOliveLimitCard(
 }
 
 /**
- * Customization & Privacy Card in CharcoalBento (28.dp squircle corners).
+ * Customization & Privacy Card in SurfaceCharcoal.
  */
 @Composable
-private fun CustomizationBentoCard(
+private fun CustomizationPrivacyCard(
     customAlias: String?,
     colorTag: Int?,
     isExcluded: Boolean,
@@ -721,30 +709,30 @@ private fun CustomizationBentoCard(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        color = CharcoalBento,
-        border = BorderStroke(1.dp, Color(0x1FFFFFFF))
+        shape = RoundedCornerShape(24.dp),
+        color = SurfaceCharcoal,
+        border = BorderStroke(1.dp, BorderSubtle)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp)
+                .padding(18.dp)
         ) {
             Text(
                 text = "Customization & Privacy",
-                fontSize = 17.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextLight
+                color = TextWhite
             )
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Custom Alias Tile
+            // Custom Display Alias Tile
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(Color(0x14FFFFFF))
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(CircleBtnDark)
                     .clickable(onClick = onOpenAliasDialog)
                     .padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -755,12 +743,12 @@ private fun CustomizationBentoCard(
                         text = "Custom Display Alias",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = TextLight
+                        color = TextWhite
                     )
                     Text(
                         text = customAlias ?: "None (Using original WhatsApp chat name)",
                         fontSize = 12.sp,
-                        color = TextMutedLight
+                        color = TextSubtle
                     )
                 }
 
@@ -768,26 +756,26 @@ private fun CustomizationBentoCard(
                     modifier = Modifier
                         .size(32.dp)
                         .clip(CircleShape)
-                        .background(ButterGold),
+                        .background(AcidLime),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
                         contentDescription = null,
-                        tint = Color(0xFF141413),
+                        tint = OnAcidLimeInk,
                         modifier = Modifier.size(16.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Chart Color Tag Picker Row
             Text(
                 text = "Chart Color Accent",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = TextLight
+                color = TextWhite
             )
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -806,7 +794,7 @@ private fun CustomizationBentoCard(
                             .background(color)
                             .border(
                                 width = if (isSelected) 3.dp else 1.dp,
-                                color = if (isSelected) ButterGold else Color.Transparent,
+                                color = if (isSelected) AcidLime else Color.Transparent,
                                 shape = CircleShape
                             )
                             .clickable {
@@ -839,12 +827,12 @@ private fun CustomizationBentoCard(
                         text = "Exclude from Tracking",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = TextLight
+                        color = TextWhite
                     )
                     Text(
                         text = "When enabled, WhatSpent ignores this conversation completely. Time is neither tracked nor saved.",
                         fontSize = 12.sp,
-                        color = TextMutedLight
+                        color = TextSubtle
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
@@ -852,10 +840,10 @@ private fun CustomizationBentoCard(
                     checked = isExcluded,
                     onCheckedChange = onToggleExcluded,
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color(0xFF141413),
-                        checkedTrackColor = ButterGold,
-                        uncheckedTrackColor = Color(0xFF333336),
-                        uncheckedThumbColor = TextMutedLight
+                        checkedThumbColor = OnAcidLimeInk,
+                        checkedTrackColor = AcidLime,
+                        uncheckedTrackColor = BarInactiveCharcoal,
+                        uncheckedThumbColor = TextSubtle
                     )
                 )
             }
@@ -864,10 +852,10 @@ private fun CustomizationBentoCard(
 }
 
 /**
- * Custom Alias Dialog styled with dark charcoal container and butter-gold button.
+ * Dark Custom Alias Dialog styled with SurfaceCharcoal container and AcidLime button.
  */
 @Composable
-private fun CustomAliasDialog(
+private fun DarkCustomAliasDialog(
     currentAlias: String,
     chatName: String,
     onDismiss: () -> Unit,
@@ -877,13 +865,13 @@ private fun CustomAliasDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = CharcoalBento,
-        shape = RoundedCornerShape(28.dp),
+        containerColor = SurfaceCharcoal,
+        shape = RoundedCornerShape(24.dp),
         title = {
             Text(
                 text = "Edit Chat Alias",
                 fontWeight = FontWeight.Bold,
-                color = TextLight
+                color = TextWhite
             )
         },
         text = {
@@ -891,21 +879,21 @@ private fun CustomAliasDialog(
                 Text(
                     text = "Original WhatsApp: $chatName",
                     fontSize = 12.sp,
-                    color = TextMutedLight
+                    color = TextSubtle
                 )
                 Spacer(modifier = Modifier.height(14.dp))
                 OutlinedTextField(
                     value = text,
                     onValueChange = { text = it },
-                    label = { Text("Custom Display Name", color = TextMutedLight) },
+                    label = { Text("Custom Display Name", color = TextSubtle) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = TextLight,
-                        unfocusedTextColor = TextLight,
-                        focusedBorderColor = ButterGold,
-                        unfocusedBorderColor = Color(0x33FFFFFF)
+                        focusedTextColor = TextWhite,
+                        unfocusedTextColor = TextWhite,
+                        focusedBorderColor = AcidLime,
+                        unfocusedBorderColor = BorderSubtle
                     )
                 )
             }
@@ -915,8 +903,8 @@ private fun CustomAliasDialog(
                 onClick = { onSave(text.trim().ifBlank { null }) },
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = ButterGold,
-                    contentColor = Color(0xFF141413)
+                    containerColor = AcidLime,
+                    contentColor = OnAcidLimeInk
                 )
             ) {
                 Text("Save", fontWeight = FontWeight.Bold)
@@ -924,8 +912,78 @@ private fun CustomAliasDialog(
         },
         dismissButton = {
             TextButton(onClick = { onSave(null) }) {
-                Text("Reset", color = TextMutedLight)
+                Text("Reset", color = TextSubtle)
             }
         }
     )
+}
+
+/**
+ * Two-tone duration display: primary number in TextWhite + secondary unit in TextMutedUnit.
+ */
+@Composable
+private fun TwoToneDuration(
+    durationMs: Long,
+    modifier: Modifier = Modifier,
+    primarySize: TextUnit = 36.sp,
+    secondarySize: TextUnit = 22.sp,
+    primaryColor: Color = TextWhite,
+    secondaryColor: Color = TextMutedUnit
+) {
+    val totalSeconds = (durationMs / 1000).coerceAtLeast(0L)
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        when {
+            hours > 0 -> {
+                Text(
+                    text = "${hours}h",
+                    fontSize = primarySize,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = primaryColor,
+                    letterSpacing = (-0.5).sp
+                )
+                Text(
+                    text = "${minutes}m",
+                    fontSize = secondarySize,
+                    fontWeight = FontWeight.Bold,
+                    color = secondaryColor,
+                    modifier = Modifier.padding(bottom = 2.dp)
+                )
+            }
+            minutes > 0 -> {
+                Text(
+                    text = "${minutes}m",
+                    fontSize = primarySize,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = primaryColor,
+                    letterSpacing = (-0.5).sp
+                )
+                if (seconds > 0) {
+                    Text(
+                        text = "${seconds}s",
+                        fontSize = secondarySize,
+                        fontWeight = FontWeight.Bold,
+                        color = secondaryColor,
+                        modifier = Modifier.padding(bottom = 2.dp)
+                    )
+                }
+            }
+            else -> {
+                Text(
+                    text = "${seconds}s",
+                    fontSize = primarySize,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = primaryColor,
+                    letterSpacing = (-0.5).sp
+                )
+            }
+        }
+    }
 }
